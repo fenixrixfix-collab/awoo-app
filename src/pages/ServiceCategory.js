@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import pb from '../services/pocketbase';
 import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/maplibre';
 import BottomNav from '../components/BottomNav';
 import '../styles/Services.css';
@@ -9,8 +9,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 function ServiceCategory() {
   const { type } = useParams();
   const navigate = useNavigate();
-  const [providers, setProviders] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [userCoords, setUserCoords] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
   const [viewMode, setViewMode] = useState('list');
@@ -55,12 +53,8 @@ function ServiceCategory() {
     { id: 3, name: 'Доктор Пёс', description: 'Специализация: собаки', rating: 4.7, reviews: 89, price: 'от 450 ₽', address: 'ул. Пушкина, 78', phone: '+7 (912) 567-89-01', workTime: '10:00 - 20:00', isVerified: false, lat: 55.7400, lng: 37.6000 },
   ];
 
-  useEffect(() => {
-    setLoading(false);
-  }, [type]);
-
   // Сортируем по расстоянию если есть геолокация
-  const displayProviders = (providers.length > 0 ? providers : mockProviders)
+  const displayProviders = mockProviders
     .map(p => ({
       ...p,
       distance: userCoords && p.lat && p.lng
