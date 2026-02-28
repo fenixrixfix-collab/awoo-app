@@ -1,0 +1,336 @@
+/* Volunteers Pages Styles */
+.volunteers-page {
+  min-height: 100vh;
+  padding-bottom: 70px;
+  background: #F5F7FA;
+}
+
+.tab-switcher-small {
+  display: flex;
+  gap: 20px;
+}
+
+.tab-switcher-small .tab {
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.tab-switcher-small .tab.active {
+  color: white;
+  border-bottom-color: white;
+}
+
+.stats-banner {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+  padding: 20px;
+  margin: 15px 20px;
+  border-radius: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-num {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Volunteer Card */
+.volunteers-list {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.volunteer-card {
+  background: white;
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  transition: transform 0.3s;
+}
+
+.volunteer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+}
+
+.vol-header {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.vol-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3B5998 0%, #6BA3E8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.vol-info {
+  flex: 1;
+}
+
+.vol-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.vol-district {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.vol-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.stars {
+  color: #FFD700;
+}
+
+.rating-val {
+  font-weight: 600;
+  color: #333;
+}
+
+.help-count {
+  color: #999;
+}
+
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.available {
+  background: #E8F5E9;
+  color: #4CAF50;
+}
+
+.status-badge.busy {
+  background: #FFE5DB;
+  color: #FF9800;
+}
+
+.vol-services {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.service-tag {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #F5F9FF;
+  color: #3B5998;
+}
+
+.vol-description {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.vol-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.vol-actions button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.btn-profile {
+  background: #F5F9FF;
+  color: #3B5998;
+  border: 2px solid #E3F2FD;
+}
+
+.btn-contact {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+}
+
+/* Request Card */
+.requests-list {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.request-card {
+  background: white;
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  transition: transform 0.3s;
+}
+
+.request-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+}
+
+.req-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.req-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.author-avatar {
+  font-size: 16px;
+}
+
+.author-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.req-time {
+  color: #999;
+}
+
+.urgency-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.urgency-badge.critical {
+  background: #FFEBEE;
+  color: #F44336;
+}
+
+.urgency-badge.urgent {
+  background: #FFF3E0;
+  color: #FF9800;
+}
+
+.urgency-badge.normal {
+  background: #E8F5E9;
+  color: #4CAF50;
+}
+
+.req-type {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.req-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.req-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.req-details {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.req-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.responses-count {
+  font-size: 13px;
+  color: #999;
+}
+
+.btn-respond {
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+  color: white;
+}
+
+.btn-respond.responded {
+  background: #E3F2FD;
+  color: #3B5998;
+}
+
+@media (max-width: 768px) {
+  .volunteers-list, .requests-list {
+    padding: 0 15px;
+  }
+  
+  .stats-banner {
+    margin: 15px 15px;
+  }
+}
