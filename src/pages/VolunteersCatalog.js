@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import pb from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
@@ -6,7 +6,6 @@ import '../styles/Volunteers.css';
 
 function VolunteersCatalog() {
   const [volunteers, setVolunteers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [userDistrict, setUserDistrict] = useState(null);
   const navigate = useNavigate();
@@ -26,12 +25,7 @@ function VolunteersCatalog() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchVolunteers();
-  }, [filter]);
-
-  const fetchVolunteers = async () => {
-    setLoading(true);
+  const fetchVolunteers = useCallback(async () => {
     try {
       let filterStr = 'userType = "volunteer"';
       if (filter === 'available') filterStr += ' && isAvailable = true';
@@ -45,10 +39,12 @@ function VolunteersCatalog() {
     } catch (error) {
       console.error('Error fetching volunteers:', error);
       setVolunteers([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [filter, userDistrict]);
+
+  useEffect(() => {
+    fetchVolunteers();
+  }, [fetchVolunteers]);
 
   const mockVolunteers = [
     { id: 1, name: 'Мария Соколова', district: 'Центральный', rating: 4.9, helpCount: 45, isAvailable: true, services: ['Передержка', 'Транспорт', 'Выгул'], description: '5 лет опыта волонтёрства' },
@@ -99,7 +95,7 @@ function VolunteersCatalog() {
       )}
 
       <div className="content">
-        {loading && volunteers.length === 0 ? (
+        {volunteers.length === 0 ? (
           <div className="loading-state"><div className="spinner"></div><p>Загрузка...</p></div>
         ) : (
           <div className="volunteers-list">
@@ -147,4 +143,5 @@ function VolunteersCatalog() {
 }
 
 export default VolunteersCatalog;
+
 

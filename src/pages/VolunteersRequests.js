@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import pb from '../services/pocketbase';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Volunteers.css';
 
 function VolunteersRequests() {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const navigate = useNavigate();
 
@@ -98,4 +95,5 @@ function VolunteersRequests() {
 }
 
 export default VolunteersRequests;
+
 
