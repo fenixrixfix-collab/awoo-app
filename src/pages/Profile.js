@@ -21,7 +21,7 @@ function Profile() {
     } else {
       setUser(pb.authStore.model);
     }
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogout = () => {
     if (window.confirm('Вы уверены, что хотите выйти?')) {
@@ -92,4 +92,5 @@ function Profile() {
 }
 
 export default Profile;
+
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import pb from '../services/pocketbase';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre';
@@ -219,4 +219,5 @@ function CreatePost() {
 }
 
 export default CreatePost;
+
 

@@ -3,7 +3,8 @@
 
 
 
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import pb, { getImageUrl } from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
 import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/maplibre';
@@ -30,7 +31,7 @@ function Home() {
     }
   }, []);
 
-  useEffect(() => { fetchPosts(); }, [filter]);
+  useEffect(() => { fetchPosts(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPosts = async () => {
     setLoading(true);

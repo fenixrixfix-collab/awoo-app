@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import pb, { getImageUrl } from '../services/pocketbase';
@@ -13,7 +14,7 @@ function PostDetail() {
 
   useEffect(() => {
     fetchPost();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPost = async () => {
     try {
@@ -165,5 +166,4 @@ function getPetTypeLabel(type) {
 }
 
 export default PostDetail;
-
 

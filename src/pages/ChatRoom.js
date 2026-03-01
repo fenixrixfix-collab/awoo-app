@@ -10,10 +10,8 @@ function ChatRoom() {
   const { chatType, chatName } = location.state || {};
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
   const currentUser = pb.authStore.model;
 
-  // Mock сообщения для демонстрации
   const mockMessages = [
     { id: 1, userId: 'other', userName: 'Мария Соколова', text: 'Здравствуйте! Могу помочь с передержкой', time: '10:25', isOwn: false },
     { id: 2, userId: currentUser?.id, userName: currentUser?.name, text: 'Отлично! На сколько дней?', time: '10:26', isOwn: true },
@@ -23,6 +21,7 @@ function ChatRoom() {
 
   useEffect(() => {
     setMessages(mockMessages);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
 
   const handleSend = async () => {
@@ -88,3 +87,4 @@ function ChatRoom() {
 }
 
 export default ChatRoom;
+
