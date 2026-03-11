@@ -104,7 +104,7 @@ function CreatePost() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Basic os_v2_app_dwehqsrkrzfdxhfds67eze45sdnfd75ujsuep4mvodod6fv5c3tw25uapvaj5uhsaj5m4gxquz64qechzfauqnxxsupfxh2esxchvzy'
+            'Authorization': `Basic ${process.env.REACT_APP_ONESIGNAL_API_KEY}`
           },
           body: JSON.stringify({
             app_id: '1d88784a-2a8e-4a3b-9ca3-97be4c939d90',
@@ -240,3 +240,6 @@ function CreatePost() {
 }
 
 export default CreatePost;
+
+
+
