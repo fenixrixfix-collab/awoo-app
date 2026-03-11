@@ -97,6 +97,27 @@ function CreatePost() {
       if (image) data.append('image', image);
 
       await pb.collection('posts').create(data);
+
+      // Отправляем push-уведомление всем подписчикам
+      try {
+        await fetch('https://onesignal.com/api/v1/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic os_v2_app_dwehqsrkrzfdxhfds67eze45sdnfd75ujsuep4mvodod6fv5c3tw25uapvaj5uhsaj5m4gxquz64qechzfauqnxxsupfxh2esxchvzy'
+          },
+          body: JSON.stringify({
+            app_id: '1d88784a-2a8e-4a3b-9ca3-97be4c939d90',
+            included_segments: ['Total Subscriptions'],
+            headings: { ru: postType === 'lost' ? '🔍 Потерялся питомец!' : '🐾 Найден питомец!' },
+            contents: { ru: `${formData.petName} — ${formData.location}` },
+            url: 'https://awoo-app-v2.vercel.app/home'
+          })
+        });
+      } catch (e) {
+        console.log('Push error:', e);
+      }
+
       navigate('/home');
     } catch (err) {
       console.error(err);
@@ -219,5 +240,3 @@ function CreatePost() {
 }
 
 export default CreatePost;
-
-
