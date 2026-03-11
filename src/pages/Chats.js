@@ -1,42 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import pb from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Chats.css';
 
 function Chats() {
-  const [activeTab, setActiveTab] = useState('group');
+  const [activeTab, setActiveTab] = useState('private');
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
+  const [privateChats, setPrivateChats] = useState([]);
+  const [chatsLoading, setChatsLoading] = useState(true);
 
-  // Определяем доступные групповые чаты
-  const availableGroupChats = [
-    { id: 'general', name: 'Общий чат', icon: '🌐', type: 'general', description: 'Для всех пользователей', forAll: true },
-    { id: 'volunteers', name: 'Чат волонтёров', icon: '🤝', type: 'volunteer', description: 'Координация помощи', allowedType: 'volunteer' },
-    { id: 'veterinary', name: 'Чат ветеринаров', icon: '🏥', type: 'veterinary', description: 'Профессиональное общение', allowedType: 'veterinary' },
-    { id: 'trainers', name: 'Чат кинологов', icon: '🎓', type: 'trainer', description: 'Обмен опытом', allowedType: 'trainer' },
-    { id: 'groomers', name: 'Чат грумеров', icon: '✂️', type: 'groomer', description: 'Советы и рекомендации', allowedType: 'groomer' },
-    { id: 'zootaxi', name: 'Чат зоотакси', icon: '🚗', type: 'zootaxi', description: 'Координация перевозок', allowedType: 'zootaxi' },
-  ];
+  const groupChats = [
+    { id: 'general', name: 'Общий чат', icon: '🌐', description: 'Для всех пользователей', forAll: true },
+    { id: 'volunteers', name: 'Чат волонтёров', icon: '🤝', description: 'Координация помощи', allowedType: 'volunteer' },
+    { id: 'veterinary', name: 'Чат ветеринаров', icon: '🏥', description: 'Профессиональное общение', allowedType: 'veterinary' },
+    { id: 'trainers', name: 'Чат кинологов', icon: '🎓', description: 'Обмен опытом', allowedType: 'trainer' },
+    { id: 'groomers', name: 'Чат грумеров', icon: '✂️', description: 'Советы и рекомендации', allowedType: 'groomer' },
+    { id: 'zootaxi', name: 'Чат зоотакси', icon: '🚗', description: 'Координация перевозок', allowedType: 'zootaxi' },
+  ].filter(c => c.forAll || c.allowedType === currentUser?.userType);
 
-  // Фильтруем чаты по правам доступа
-  const userGroupChats = availableGroupChats.filter(chat => 
-    chat.forAll || chat.allowedType === currentUser?.userType
-  );
+  useEffect(() => {
+    if (activeTab === 'private') fetchPrivateChats();
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mock данные для личных чатов
-  const mockPrivateChats = [
-    { id: 1, userName: 'Мария Соколова', userAvatar: '👩', lastMessage: 'Спасибо за помощь!', time: '10:30', unread: 2, online: true },
-    { id: 2, userName: 'Ветклиника Айболит', userAvatar: '🏥', lastMessage: 'Можем принять завтра', time: 'Вчера', unread: 0, online: false },
-    { id: 3, userName: 'Дмитрий Петров', userAvatar: '👨', lastMessage: 'Собака найдена!', time: '2 дня', unread: 0, online: false },
-  ];
+  const fetchPrivateChats = async () => {
+    setChatsLoading(true);
+    try {
+      // Получаем последние сообщения из личных чатов текущего пользователя
+      const records = await pb.collection('messages').getList(1, 200, {
+        filter: `(userId = "${currentUser?.id}" || chatId ~ "${currentUser?.id}") && chatType = "private"`,
+        sort: '-created'
+      });
 
-  const handleOpenGroupChat = (chat) => {
-    navigate(`/chat/${chat.id}`, { state: { chatType: 'group', chatName: chat.name } });
-  };
+      // Группируем по chatId и берём последнее сообщение
+      const chatsMap = {};
+      for (const msg of records.items) {
+        if (!chatsMap[msg.chatId]) {
+          chatsMap[msg.chatId] = msg;
+        }
+      }
 
-  const handleOpenPrivateChat = (chat) => {
-    navigate(`/chat/${chat.id}`, { state: { chatType: 'private', chatName: chat.userName } });
+      const chatsList = Object.values(chatsMap).map(msg => ({
+        id: msg.chatId,
+        userName: msg.isOwn ? msg.chatId : msg.userName,
+        lastMessage: msg.text,
+        time: new Date(msg.created).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        unread: 0
+      }));
+
+      setPrivateChats(chatsList);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setChatsLoading(false);
+    }
   };
 
   return (
@@ -47,27 +65,26 @@ function Chats() {
           <div className="search-icon">🔍</div>
         </div>
         <div className="tabs">
-          <div className={`tab ${activeTab === 'group' ? 'active' : ''}`} onClick={() => setActiveTab('group')}>
-            Чаты ({userGroupChats.length})
-          </div>
           <div className={`tab ${activeTab === 'private' ? 'active' : ''}`} onClick={() => setActiveTab('private')}>
-            Личные ({mockPrivateChats.filter(c => c.unread > 0).length})
+            Личные
+          </div>
+          <div className={`tab ${activeTab === 'group' ? 'active' : ''}`} onClick={() => setActiveTab('group')}>
+            Чаты ({groupChats.length})
           </div>
         </div>
       </div>
 
       <div className="content">
-        {activeTab === 'group' ? (
+        {activeTab === 'group' && (
           <div className="group-chats-list">
-            {userGroupChats.map(chat => (
-              <div key={chat.id} className="chat-item group-chat-item" onClick={() => handleOpenGroupChat(chat)}>
+            {groupChats.map(chat => (
+              <div key={chat.id} className="chat-item group-chat-item"
+                onClick={() => navigate(`/chat/${chat.id}`, { state: { chatType: 'group', chatName: chat.name } })}>
                 <div className="chat-avatar group-avatar">{chat.icon}</div>
                 <div className="chat-content">
                   <div className="chat-header">
                     <div className="chat-name">{chat.name}</div>
-                    {chat.allowedType && (
-                      <div className="access-badge">🔒 Закрытый</div>
-                    )}
+                    {chat.allowedType && <div className="access-badge">🔒 Закрытый</div>}
                   </div>
                   <div className="chat-message">{chat.description}</div>
                 </div>
@@ -75,28 +92,34 @@ function Chats() {
               </div>
             ))}
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'private' && (
           <div className="private-chats-list">
-            {mockPrivateChats.map(chat => (
-              <div key={chat.id} className={`chat-item ${chat.unread > 0 ? 'unread' : ''}`} onClick={() => handleOpenPrivateChat(chat)}>
-                <div className="chat-avatar">
-                  {chat.userAvatar}
-                  {chat.online && <div className="online-badge"></div>}
-                </div>
-                <div className="chat-content">
-                  <div className="chat-header">
-                    <div className="chat-name">{chat.userName}</div>
-                    <div className="chat-time">{chat.time}</div>
-                  </div>
-                  <div className="chat-message">{chat.lastMessage}</div>
-                </div>
-                {chat.unread > 0 && (
-                  <div className="chat-info">
-                    <div className="unread-badge">{chat.unread}</div>
-                  </div>
-                )}
+            {chatsLoading ? (
+              <div style={{textAlign:'center', padding:'40px', color:'#999'}}>Загрузка...</div>
+            ) : privateChats.length === 0 ? (
+              <div style={{textAlign:'center', padding:'40px 20px', color:'#999'}}>
+                <div style={{fontSize:'48px'}}>💬</div>
+                <p>Нет личных сообщений</p>
+                <p style={{fontSize:'13px'}}>Напишите кому-нибудь из объявления</p>
               </div>
-            ))}
+            ) : (
+              privateChats.map(chat => (
+                <div key={chat.id} className="chat-item"
+                  onClick={() => navigate(`/chat/${chat.id}`, { state: { chatType: 'private', chatName: chat.userName } })}>
+                  <div className="chat-avatar">👤</div>
+                  <div className="chat-content">
+                    <div className="chat-header">
+                      <div className="chat-name">{chat.userName}</div>
+                      <div className="chat-time">{chat.time}</div>
+                    </div>
+                    <div className="chat-message">{chat.lastMessage}</div>
+                  </div>
+                  {chat.unread > 0 && <div className="unread-badge">{chat.unread}</div>}
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -107,3 +130,4 @@ function Chats() {
 }
 
 export default Chats;
+
