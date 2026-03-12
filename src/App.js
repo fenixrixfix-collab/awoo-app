@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import pb from './services/pocketbase';
-
+ 
 // Pages
 import SplashScreen from './pages/SplashScreen';
 import Login from './pages/Login';
@@ -17,31 +17,32 @@ import ChatRoom from './pages/ChatRoom';
 import Services from './pages/Services';
 import ServiceCategory from './pages/ServiceCategory';
 import { MoreMenu } from './pages/PlaceholderPages';
-
+import Blacklist from './pages/Blacklist';
+ 
 // Styles
 import './styles/App.css';
-
+ 
 function App() {
   const [user, setUser] = React.useState(pb.authStore.model);
   const [showSplash, setShowSplash] = React.useState(true);
-
+ 
   React.useEffect(() => {
     const unsubscribe = pb.authStore.onChange((token, model) => {
       setUser(model);
     });
-
+ 
     const splashTimer = setTimeout(() => {
       setShowSplash(false);
     }, 2500);
-
+ 
     return () => {
       unsubscribe();
       clearTimeout(splashTimer);
     };
   }, []);
-
+ 
   if (showSplash) return <SplashScreen />;
-
+ 
   return (
     <Router>
       <div className="App">
@@ -60,6 +61,7 @@ function App() {
           <Route path="/chats" element={user ? <Chats /> : <Navigate to="/login" />} />
           <Route path="/chat/:chatId" element={user ? <ChatRoom /> : <Navigate to="/login" />} />
           <Route path="/more" element={user ? <MoreMenu /> : <Navigate to="/login" />} />
+          <Route path="/blacklist" element={user ? <Blacklist /> : <Navigate to="/login" />} />
           <Route path="/" element={<Navigate to={user ? "/home" : "/login"} />} />
           <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
         </Routes>
@@ -67,6 +69,6 @@ function App() {
     </Router>
   );
 }
-
+ 
 export default App;
-
+ 
