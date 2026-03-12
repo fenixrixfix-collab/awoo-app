@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import pb from '../services/pocketbase';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/Chats.css';
-
+ 
 function ChatRoom() {
   const { chatId } = useParams();
   const location = useLocation();
@@ -14,46 +13,46 @@ function ChatRoom() {
   const [loading, setLoading] = useState(true);
   const currentUser = pb.authStore.model;
   const messagesEndRef = useRef(null);
-
+  const lastIdRef = useRef(null);
+  const pollRef = useRef(null);
+ 
   useEffect(() => {
-    fetchMessages();
-    subscribeToMessages();
-    return () => {
-      pb.collection('messages').unsubscribe('*');
-    };
+    fetchMessages(true);
+    pollRef.current = setInterval(() => fetchMessages(false), 3000);
+    return () => clearInterval(pollRef.current);
   }, [chatId]); // eslint-disable-line react-hooks/exhaustive-deps
-
+ 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const fetchMessages = async () => {
-    setLoading(true);
+ 
+  const fetchMessages = async (initial) => {
     try {
-      const records = await pb.collection('messages').getList(1, 100, {
-        filter: `chatId = "${chatId}"`,
+      const filter = lastIdRef.current && !initial
+        ? `chatId = "${chatId}" && created > "${lastIdRef.current}"`
+        : `chatId = "${chatId}"`;
+ 
+      const records = await pb.collection('messages').getList(1, 200, {
+        filter,
         sort: 'created'
       });
-      setMessages(records.items.map(formatMessage));
+ 
+      if (records.items.length > 0) {
+        const formatted = records.items.map(formatMessage);
+        if (initial) {
+          setMessages(formatted);
+        } else {
+          setMessages(prev => [...prev, ...formatted]);
+        }
+        lastIdRef.current = records.items[records.items.length - 1].created;
+      }
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (initial) setLoading(false);
     }
   };
-
-  const subscribeToMessages = async () => {
-    try {
-      await pb.collection('messages').subscribe('*', (e) => {
-        if (e.action === 'create' && e.record.chatId === chatId) {
-          setMessages(prev => [...prev, formatMessage(e.record)]);
-        }
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
+ 
   const formatMessage = (record) => ({
     id: record.id,
     userId: record.userId,
@@ -62,7 +61,7 @@ function ChatRoom() {
     time: new Date(record.created).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
     isOwn: record.userId === currentUser?.id
   });
-
+ 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     const text = newMessage.trim();
@@ -75,12 +74,14 @@ function ChatRoom() {
         text,
         chatType: chatType || 'group'
       });
+      // Сразу подгружаем новые сообщения
+      fetchMessages(false);
     } catch (e) {
       console.error(e);
       setNewMessage(text);
     }
   };
-
+ 
   return (
     <div className="chat-room">
       <div className="chat-header">
@@ -91,7 +92,7 @@ function ChatRoom() {
         </div>
         <div className="chat-header-actions"><span>⋮</span></div>
       </div>
-
+ 
       <div className="messages-container">
         {loading ? (
           <div style={{textAlign:'center', padding:'20px', color:'#999'}}>Загрузка...</div>
@@ -114,7 +115,7 @@ function ChatRoom() {
         )}
         <div ref={messagesEndRef} />
       </div>
-
+ 
       <div className="message-input-container">
         <input
           type="text"
@@ -129,5 +130,5 @@ function ChatRoom() {
     </div>
   );
 }
-
+ 
 export default ChatRoom;
