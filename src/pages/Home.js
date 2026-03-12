@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import pb, { getImageUrl } from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +6,7 @@ import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/maplibre';
 import BottomNav from '../components/BottomNav';
 import '../styles/Home.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
-
+ 
 function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +15,7 @@ function Home() {
   const [viewMode, setViewMode] = useState('list');
   const [selectedPost, setSelectedPost] = useState(null);
   const navigate = useNavigate();
-
+ 
   useEffect(() => {
     // Тихо получаем геолокацию при загрузке
     if (navigator.geolocation) {
@@ -30,9 +25,9 @@ function Home() {
       );
     }
   }, []);
-
+ 
   useEffect(() => { fetchPosts(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
-
+ 
   const fetchPosts = async () => {
     setLoading(true);
     try {
@@ -42,13 +37,13 @@ function Home() {
       else if (filter === 'dog') filterStr = 'petType = "dog"';
       else if (filter === 'cat') filterStr = 'petType = "cat"';
       else if (filter === 'other') filterStr = 'petType != "dog" && petType != "cat"';
-
+ 
       const queryOptions = { sort: '-created' };
       if (filterStr) queryOptions.filter = filterStr;
-
+ 
       const records = await pb.collection('posts').getList(1, 50, queryOptions);
       let items = records.items;
-
+ 
       // Сортировка по близости если есть геолокация и фильтр "рядом"
       if (filter === 'nearby' && userCoords) {
         items = items
@@ -59,7 +54,7 @@ function Home() {
             return distA - distB;
           });
       }
-
+ 
       setPosts(items);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -67,7 +62,7 @@ function Home() {
       setLoading(false);
     }
   };
-
+ 
   const filters = [
     { value: 'all', label: 'Все' },
     { value: 'lost', label: '🔍 Потерялись' },
@@ -77,7 +72,7 @@ function Home() {
     { value: 'other', label: '🐦 Другое' },
     { value: 'nearby', label: '📍 Рядом' },
   ];
-
+ 
   return (
     <div className="home-page">
       <div className="header">
@@ -91,10 +86,13 @@ function Home() {
             </div>
             <div className="logo-subtitle" style={{fontSize:'17px'}}>Розыск, помощь и уход за животными.</div>
           </div>
-          <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
             <div className="notification-icon">🔔</div>
-            <button onClick={() => setViewMode(v => v === 'list' ? 'map' : 'list')} style={{background:'rgba(255,255,255,0.2)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'18px'}}>
-              {viewMode === 'list' ? '🗺️' : '☰'}
+            <button onClick={() => navigate('/profile')} style={{background:'rgba(255,255,255,0.2)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+              ЛС
+            </button>
+            <button onClick={() => navigate('/blacklist')} style={{background:'rgba(220,50,50,0.5)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+              ЧС
             </button>
           </div>
         </div>
@@ -110,7 +108,7 @@ function Home() {
           ))}
         </div>
       </div>
-
+ 
       <div className="content">
         {viewMode === 'map' ? (
           <div style={{height:'calc(100vh - 200px)'}}>
@@ -186,13 +184,13 @@ function Home() {
           </div>
         )}
         </div>
-
+ 
       <div className="fab" onClick={() => navigate('/create-post')}>➕</div>
       <BottomNav />
     </div>
   );
 }
-
+ 
 function getTimeAgo(timestamp) {
   if (!timestamp) return 'недавно';
   const now = new Date();
@@ -203,5 +201,6 @@ function getTimeAgo(timestamp) {
   if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
   return `${Math.floor(diff / 86400)} дн назад`;
 }
-
+ 
 export default Home;
+ 
