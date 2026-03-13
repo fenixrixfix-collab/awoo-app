@@ -19,11 +19,13 @@ function BottomNav() {
   const fetchUnread = async () => {
     if (!currentUser?.id) return;
     try {
-      const records = await pb.collection('messages').getList(1, 1, {
-        filter: `chatId ~ "${currentUser.id}" && userId != "${currentUser.id}" && read = false && chatType = "private"`,
-        fields: 'id'
+      const records = await pb.collection('messages').getList(1, 200, {
+        filter: `userId != "${currentUser.id}" && read = false && chatType = "private"`,
+        fields: 'id,chatId'
       });
-      setUnreadCount(records.totalItems);
+      // Фильтруем только чаты где участвует текущий пользователь
+      const myChats = records.items.filter(m => m.chatId && m.chatId.includes(currentUser.id));
+      setUnreadCount(myChats.length);
     } catch (e) {}
   };
 
