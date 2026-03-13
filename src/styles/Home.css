@@ -81,7 +81,9 @@
   display: flex;
   gap: 10px;
   overflow-x: auto;
+  overflow-y: visible;
   padding-bottom: 5px;
+  padding-top: 8px;
 }
 
 .filters::-webkit-scrollbar {
@@ -98,6 +100,8 @@
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.3s;
+  overflow: visible;
+  margin-top: 4px;
 }
 
 .filter-btn.active {
