@@ -15,6 +15,7 @@ function Home() {
   const [viewMode, setViewMode] = useState('list');
   const [selectedPost, setSelectedPost] = useState(null);
   const [badges, setBadges] = useState({ ls: 0, cs: 0 });
+  const [filterBadges, setFilterBadges] = useState({ lost: 0, found: 0 });
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
  
@@ -58,6 +59,15 @@ function Home() {
         csCount = cs.totalItems;
       } catch (e) {}
 
+      // Новые объявления для фильтров
+      const lastLost = localStorage.getItem('lastVisitFilterLost') || '2000-01-01';
+      const lastFound = localStorage.getItem('lastVisitFilterFound') || '2000-01-01';
+      const [lostRes, foundRes] = await Promise.all([
+        pb.collection('posts').getList(1, 1, { filter: `type = "lost" && created > "${lastLost}" && userId != "${currentUser.id}"`, fields: 'id' }),
+        pb.collection('posts').getList(1, 1, { filter: `type = "found" && created > "${lastFound}" && userId != "${currentUser.id}"`, fields: 'id' }),
+      ]);
+      setFilterBadges({ lost: lostRes.totalItems, found: foundRes.totalItems });
+
       setBadges({ ls: unreadMsgs, cs: csCount });
     } catch (e) {}
   };
@@ -71,6 +81,7 @@ function Home() {
       else if (filter === 'dog') filterStr = 'petType = "dog"';
       else if (filter === 'cat') filterStr = 'petType = "cat"';
       else if (filter === 'other') filterStr = 'petType != "dog" && petType != "cat"';
+      else if (filter === 'services') filterStr = 'type = "service"';
  
       const queryOptions = { sort: '-created' };
       if (filterStr) queryOptions.filter = filterStr;
@@ -79,14 +90,8 @@ function Home() {
       let items = records.items;
  
       // Сортировка по близости если есть геолокация и фильтр "рядом"
-      if (filter === 'nearby' && userCoords) {
-        items = items
-          .filter(p => p.lat && p.lng)
-          .sort((a, b) => {
-            const distA = Math.hypot(a.lat - userCoords.lat, a.lng - userCoords.lng);
-            const distB = Math.hypot(b.lat - userCoords.lat, b.lng - userCoords.lng);
-            return distA - distB;
-          });
+      if (filter === 'map') {
+        items = items.filter(p => p.lat && p.lng);
       }
  
       setPosts(items);
@@ -99,12 +104,13 @@ function Home() {
  
   const filters = [
     { value: 'all', label: 'Все' },
-    { value: 'lost', label: '🔍 Потерялись' },
-    { value: 'found', label: '🐾 Найдены' },
+    { value: 'lost', label: '🔍 Потерялись', badge: filterBadges.lost },
+    { value: 'found', label: '🐾 Найдены', badge: filterBadges.found },
     { value: 'dog', label: '🐕 Собаки' },
     { value: 'cat', label: '🐈 Кошки' },
     { value: 'other', label: '🐦 Другое' },
-    { value: 'nearby', label: '📍 Рядом' },
+    { value: 'map', label: '🗺️ На карте' },
+    { value: 'services', label: '🛎️ Услуги' },
   ];
  
   return (
@@ -138,15 +144,22 @@ function Home() {
         </div>
         <div className="filters">
           {filters.map(f => (
-            <button key={f.value} className={`filter-btn ${filter === f.value ? 'active' : ''}`} onClick={() => setFilter(f.value)}>
+            <button key={f.value} className={`filter-btn ${filter === f.value ? 'active' : ''}`} style={{position:'relative'}} onClick={() => {
+              if (f.value === 'lost') localStorage.setItem('lastVisitFilterLost', new Date().toISOString());
+              if (f.value === 'found') localStorage.setItem('lastVisitFilterFound', new Date().toISOString());
+              if (f.value === 'map') setViewMode('map');
+              else setViewMode('list');
+              setFilter(f.value);
+            }}>
               {f.label}
+              {f.badge > 0 && <span style={{position:'absolute', top:'-6px', right:'-4px', background:'#FF6B35', color:'white', fontSize:'9px', fontWeight:'700', minWidth:'15px', height:'15px', borderRadius:'8px', display:'inline-flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid white'}}>{f.badge > 99 ? '99+' : f.badge}</span>}
             </button>
           ))}
         </div>
       </div>
  
       <div className="content">
-        {viewMode === 'map' ? (
+        {(viewMode === 'map' || filter === 'map') ? (
           <div style={{height:'calc(100vh - 200px)'}}>
             <Map
               initialViewState={{
