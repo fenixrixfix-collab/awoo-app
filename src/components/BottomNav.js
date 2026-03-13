@@ -20,12 +20,14 @@ function BottomNav() {
     if (!currentUser?.id) return;
     try {
       const records = await pb.collection('messages').getList(1, 200, {
-        filter: `userId != "${currentUser.id}" && read = false && chatType = "private"`,
-        fields: 'id,chatId'
+        filter: `userId != "${currentUser.id}" && chatType = "private"`,
+        fields: 'id,chatId,read'
       });
-      // Фильтруем только чаты где участвует текущий пользователь
-      const myChats = records.items.filter(m => m.chatId && m.chatId.includes(currentUser.id));
-      setUnreadCount(myChats.length);
+      // Фильтруем чаты где участвует текущий пользователь и сообщение не прочитано
+      const myUnread = records.items.filter(m =>
+        m.chatId && m.chatId.includes(currentUser.id) && !m.read
+      );
+      setUnreadCount(myUnread.length);
     } catch (e) {}
   };
 
