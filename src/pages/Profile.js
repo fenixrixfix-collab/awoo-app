@@ -3,7 +3,7 @@ import pb, { getImageUrl } from '../services/pocketbase';
 import { useNavigate, useParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Profile.css';
-
+ 
 function Profile() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -13,7 +13,7 @@ function Profile() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const isOwnProfile = !id;
-
+ 
   useEffect(() => {
     if (id) {
       setLoading(true);
@@ -25,11 +25,11 @@ function Profile() {
       setUser(pb.authStore.model);
     }
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-
+ 
   useEffect(() => {
     if (isOwnProfile && activeTab === 'posts') fetchMyPosts();
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
-
+ 
   const fetchMyPosts = async () => {
     setPostsLoading(true);
     try {
@@ -44,7 +44,7 @@ function Profile() {
       setPostsLoading(false);
     }
   };
-
+ 
   const handleDeletePost = async (postId) => {
     if (!window.confirm('Удалить объявление?')) return;
     try {
@@ -54,16 +54,28 @@ function Profile() {
       alert('Ошибка при удалении');
     }
   };
-
+ 
+  const handleTogglePhoneHidden = async () => {
+    try {
+      const updated = await pb.collection('users').update(currentUser.id, {
+        phoneHidden: !user.phoneHidden
+      });
+      pb.authStore.save(pb.authStore.token, updated);
+      setUser(updated);
+    } catch (e) {
+      alert('Ошибка при сохранении');
+    }
+  };
+ 
   const handleLogout = () => {
     if (window.confirm('Вы уверены, что хотите выйти?')) {
       pb.authStore.clear();
       navigate('/login');
     }
   };
-
+ 
   if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
-
+ 
   return (
     <div className="profile-page">
       <div className="profile-header">
@@ -79,13 +91,13 @@ function Profile() {
           </div>
         </div>
       </div>
-
+ 
       <div className="stats-container">
         <div className="stat-item"><div className="stat-number">{myPosts.length || user?.postsCount || 0}</div><div className="stat-label">Объявления</div></div>
         <div className="stat-item"><div className="stat-number">0</div><div className="stat-label">Найдено</div></div>
         <div className="stat-item"><div className="stat-number">{user?.helpCount || 0}</div><div className="stat-label">Помощь</div></div>
       </div>
-
+ 
       {isOwnProfile && (
         <div style={{display:'flex', borderBottom:'2px solid #E3F2FD', background:'white'}}>
           {[['info','👤 Профиль'], ['posts','📋 Объявления'], ['messages','💬 Сообщения']].map(([tab, label]) => (
@@ -101,7 +113,7 @@ function Profile() {
           ))}
         </div>
       )}
-
+ 
       <div className="profile-content">
         {activeTab === 'info' && (
           <>
@@ -109,7 +121,15 @@ function Profile() {
               <div className="section-title">Контакты</div>
               <div className="contact-item">
                 <div className="contact-icon">📞</div>
-                <div className="contact-info"><div className="contact-label">Телефон</div><div className="contact-value">{user?.phone || 'Не указан'}</div></div>
+                <div className="contact-info">
+                  <div className="contact-label">Телефон {isOwnProfile && <span style={{fontSize:'11px', color: user?.phoneHidden ? '#FF6B35' : '#4CAF50'}}>{user?.phoneHidden ? '🔒 скрыт' : '🔓 виден всем'}</span>}</div>
+                  <div className="contact-value">{user?.phone || 'Не указан'}</div>
+                </div>
+                {isOwnProfile && (
+                  <button onClick={handleTogglePhoneHidden} style={{background:'none', border:'1px solid #E0E0E0', borderRadius:'8px', padding:'6px 10px', fontSize:'12px', cursor:'pointer', color:'#666', flexShrink:0}}>
+                    {user?.phoneHidden ? '👁 Показать' : '🙈 Скрыть'}
+                  </button>
+                )}
               </div>
               <div className="contact-item">
                 <div className="contact-icon">📧</div>
@@ -134,7 +154,7 @@ function Profile() {
             {isOwnProfile && <button className="logout-btn" onClick={handleLogout}>Выйти из аккаунта</button>}
           </>
         )}
-
+ 
         {activeTab === 'posts' && isOwnProfile && (
           <div>
             {postsLoading ? (
@@ -189,12 +209,12 @@ function Profile() {
           </div>
         )}
       </div>
-
+ 
       <BottomNav />
     </div>
   );
 }
-
+ 
 function getTimeAgo(timestamp) {
   if (!timestamp) return '';
   const diff = Math.floor((new Date() - new Date(timestamp)) / 1000);
@@ -203,6 +223,6 @@ function getTimeAgo(timestamp) {
   if (diff < 86400) return `${Math.floor(diff/3600)} ч назад`;
   return `${Math.floor(diff/86400)} дн назад`;
 }
-
+ 
 export default Profile;
-
+ 

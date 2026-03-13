@@ -7,7 +7,7 @@ function ChatRoom() {
   const { chatId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { chatType, chatName } = location.state || {};
+  const { chatType, chatName, otherUserId } = location.state || {};
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -71,6 +71,7 @@ function ChatRoom() {
         chatId,
         userId: currentUser?.id,
         userName: currentUser?.name || 'Пользователь',
+        otherUserName: chatName || '',
         text,
         chatType: chatType || 'group'
       });
@@ -132,3 +133,4 @@ function ChatRoom() {
 }
  
 export default ChatRoom;
+ 

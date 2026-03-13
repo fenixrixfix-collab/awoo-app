@@ -499,3 +499,67 @@
   opacity: 0.85;
 }
  
+/* ================================================================
+   PHONE MODAL
+   ================================================================ */
+ 
+.phone-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+ 
+.phone-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 30px 24px;
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+ 
+.phone-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+ 
+.phone-modal-name {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 20px;
+}
+ 
+.phone-modal-number {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #3B5998;
+  text-decoration: none;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+ 
+.phone-modal-number:hover {
+  text-decoration: underline;
+}
+ 
+.phone-modal-close {
+  width: 100%;
+  padding: 12px;
+  background: #F5F7FA;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+}
+ 
