@@ -141,13 +141,25 @@ function CreatePost() {
         {/* Фото */}
         <div className="section">
           <div className="section-title">Фотография питомца</div>
-          <input type="file" id="image-upload" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
-          <label htmlFor="image-upload" className="photo-box" style={{display: 'block', height: '180px'}}>
-            {imagePreview
-              ? <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
-              : <div style={{height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}><div style={{fontSize: '48px'}}>📷</div><div style={{color: '#6BA3E8', fontWeight: '600', marginTop: '10px'}}>Нажмите чтобы добавить фото</div></div>
-            }
-          </label>
+          <input type="file" id="image-upload-gallery" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+          <input type="file" id="image-upload-camera" accept="image/*" capture="environment" onChange={handleImageChange} style={{ display: 'none' }} />
+          {imagePreview ? (
+            <div style={{position:'relative', height:'180px'}}>
+              <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
+              <button type="button" onClick={() => { setImage(null); setImagePreview(null); }} style={{position:'absolute', top:'8px', right:'8px', background:'rgba(0,0,0,0.5)', color:'white', border:'none', borderRadius:'50%', width:'28px', height:'28px', cursor:'pointer', fontSize:'14px'}}>✕</button>
+            </div>
+          ) : (
+            <div style={{display:'flex', gap:'10px'}}>
+              <label htmlFor="image-upload-camera" style={{flex:1, height:'80px', background:'#F5F9FF', border:'2px dashed #6BA3E8', borderRadius:'10px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', gap:'4px'}}>
+                <span style={{fontSize:'28px'}}>📷</span>
+                <span style={{fontSize:'12px', color:'#6BA3E8', fontWeight:'600'}}>Камера</span>
+              </label>
+              <label htmlFor="image-upload-gallery" style={{flex:1, height:'80px', background:'#F5F9FF', border:'2px dashed #6BA3E8', borderRadius:'10px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', gap:'4px'}}>
+                <span style={{fontSize:'28px'}}>🖼️</span>
+                <span style={{fontSize:'12px', color:'#6BA3E8', fontWeight:'600'}}>Галерея</span>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Вид животного */}
