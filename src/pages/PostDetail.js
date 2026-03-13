@@ -347,7 +347,7 @@ function PostDetail() {
 function CommentItem({ comment, replies, currentUser, onReply, onDelete, getReplies }) {
   const [expanded, setExpanded] = useState(true);
   const photoUrl = comment.foto
-    ? pb.files.getUrl(comment, comment.foto)
+    ? `${pb.baseUrl}/api/files/comments/${comment.id}/${comment.foto}`
     : null;
 
   return (
