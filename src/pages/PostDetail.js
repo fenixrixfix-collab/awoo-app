@@ -99,7 +99,7 @@ function PostDetail() {
       formData.append('text', commentText.trim());
       formData.append('parentId', replyTo ? replyTo.id : '');
       if (commentPhoto) {
-        formData.append('foto', commentPhoto);
+        formData.append('photo', commentPhoto);
       }
       await pb.collection('comments').create(formData);
       setCommentText('');
@@ -346,8 +346,8 @@ function PostDetail() {
 // ── Компонент одного комментария ──────────────────────────────────────────────
 function CommentItem({ comment, replies, currentUser, onReply, onDelete, getReplies }) {
   const [expanded, setExpanded] = useState(true);
-  const photoUrl = comment.foto
-    ? `${pb.baseUrl}/api/files/comments/${comment.id}/${comment.foto}`
+  const photoUrl = comment.photo
+    ? `${pb.baseUrl}/api/files/comments/${comment.id}/${comment.photo}`
     : null;
 
   return (
