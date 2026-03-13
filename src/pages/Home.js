@@ -60,8 +60,9 @@ function Home() {
       } catch (e) {}
 
       // Новые объявления для фильтров
-      const lastLost = localStorage.getItem('lastVisitFilterLost') || '2000-01-01';
-      const lastFound = localStorage.getItem('lastVisitFilterFound') || '2000-01-01';
+      const toFilter = (iso) => iso.replace('T', ' ').replace('Z', '').slice(0, 19);
+      const lastLost = toFilter(localStorage.getItem('lastVisitFilterLost') || '2000-01-01T00:00:00Z');
+      const lastFound = toFilter(localStorage.getItem('lastVisitFilterFound') || '2000-01-01T00:00:00Z');
       const [lostRes, foundRes] = await Promise.all([
         pb.collection('posts').getList(1, 1, { filter: `type = "lost" && created > "${lastLost}" && userId != "${currentUser.id}"`, fields: 'id' }),
         pb.collection('posts').getList(1, 1, { filter: `type = "found" && created > "${lastFound}" && userId != "${currentUser.id}"`, fields: 'id' }),
