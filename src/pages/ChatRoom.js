@@ -7,7 +7,7 @@ function ChatRoom() {
   const { chatId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { chatType, chatName, otherUserId } = location.state || {};
+  const { chatType, chatName } = location.state || {};
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -45,6 +45,7 @@ function ChatRoom() {
           setMessages(prev => [...prev, ...formatted]);
         }
         lastIdRef.current = records.items[records.items.length - 1].created;
+        markAsRead();
       }
     } catch (e) {
       console.error(e);
@@ -53,6 +54,19 @@ function ChatRoom() {
     }
   };
  
+  const markAsRead = async () => {
+    if (!currentUser?.id) return;
+    try {
+      const unread = await pb.collection('messages').getFullList({
+        filter: `chatId = "${chatId}" && userId != "${currentUser.id}" && read = false`,
+        fields: 'id'
+      });
+      for (const msg of unread) {
+        await pb.collection('messages').update(msg.id, { read: true });
+      }
+    } catch (e) {}
+  };
+
   const formatMessage = (record) => ({
     id: record.id,
     userId: record.userId,
@@ -71,7 +85,6 @@ function ChatRoom() {
         chatId,
         userId: currentUser?.id,
         userName: currentUser?.name || 'Пользователь',
-        otherUserName: chatName || '',
         text,
         chatType: chatType || 'group'
       });
@@ -133,4 +146,3 @@ function ChatRoom() {
 }
  
 export default ChatRoom;
- 
