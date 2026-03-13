@@ -14,7 +14,9 @@ function Home() {
   const [userCoords, setUserCoords] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [badges, setBadges] = useState({ ls: 0, cs: 0 });
   const navigate = useNavigate();
+  const currentUser = pb.authStore.model;
  
   useEffect(() => {
     // Тихо получаем геолокацию при загрузке
@@ -27,6 +29,38 @@ function Home() {
   }, []);
  
   useEffect(() => { fetchPosts(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 15000);
+    return () => clearInterval(interval);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchBadges = async () => {
+    if (!currentUser?.id) return;
+    const lastVisitLS = localStorage.getItem('lastVisitLS') || '2000-01-01';
+    const lastVisitCS = localStorage.getItem('lastVisitCS') || '2000-01-01';
+    try {
+      // ЛС — непрочитанные сообщения
+      const msgs = await pb.collection('messages').getList(1, 200, {
+        filter: `userId != "${currentUser.id}" && chatType = "private"`,
+        fields: 'id,chatId,read'
+      });
+      const unreadMsgs = msgs.items.filter(m => m.chatId && m.chatId.includes(currentUser.id) && !m.read).length;
+
+      // ЧС — новые записи в blacklist с последнего визита
+      let csCount = 0;
+      try {
+        const cs = await pb.collection('blacklist').getList(1, 1, {
+          filter: `created > "${lastVisitCS}"`,
+          fields: 'id'
+        });
+        csCount = cs.totalItems;
+      } catch (e) {}
+
+      setBadges({ ls: unreadMsgs, cs: csCount });
+    } catch (e) {}
+  };
  
   const fetchPosts = async () => {
     setLoading(true);
@@ -88,11 +122,13 @@ function Home() {
           </div>
           <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
             <div className="notification-icon">🔔</div>
-            <button onClick={() => navigate('/profile')} style={{background:'rgba(255,255,255,0.2)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+            <button onClick={() => { localStorage.setItem('lastVisitLS', new Date().toISOString()); navigate('/profile'); }} style={{background:'rgba(255,255,255,0.2)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700', position:'relative'}}>
               ЛС
+              {badges.ls > 0 && <span style={{position:'absolute', top:'-6px', right:'-6px', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'700', minWidth:'16px', height:'16px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid rgba(59,89,152,0.95)'}}>{badges.ls > 99 ? '99+' : badges.ls}</span>}
             </button>
-            <button onClick={() => navigate('/blacklist')} style={{background:'rgba(220,50,50,0.5)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700'}}>
+            <button onClick={() => { localStorage.setItem('lastVisitCS', new Date().toISOString()); navigate('/blacklist'); }} style={{background:'rgba(220,50,50,0.5)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700', position:'relative'}}>
               ЧС
+              {badges.cs > 0 && <span style={{position:'absolute', top:'-6px', right:'-6px', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'700', minWidth:'16px', height:'16px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid rgba(59,89,152,0.95)'}}>{badges.cs > 99 ? '99+' : badges.cs}</span>}
             </button>
           </div>
         </div>

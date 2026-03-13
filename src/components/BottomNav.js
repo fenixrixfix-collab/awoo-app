@@ -7,37 +7,73 @@ import '../styles/BottomNav.css';
 function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [badges, setBadges] = useState({ lost: 0, found: 0, volunteers: 0, chats: 0, services: 0 });
   const currentUser = pb.authStore.model;
 
   useEffect(() => {
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 15000);
     return () => clearInterval(interval);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchUnread = async () => {
+  const fetchBadges = async () => {
     if (!currentUser?.id) return;
+    const lastLost = localStorage.getItem('lastVisitLost') || '2000-01-01';
+    const lastFound = localStorage.getItem('lastVisitFound') || '2000-01-01';
+    const lastVol = localStorage.getItem('lastVisitVolunteers') || '2000-01-01';
+    const lastSvc = localStorage.getItem('lastVisitServices') || '2000-01-01';
+
     try {
-      const records = await pb.collection('messages').getList(1, 200, {
+      // Непрочитанные сообщения
+      const msgs = await pb.collection('messages').getList(1, 200, {
         filter: `userId != "${currentUser.id}" && chatType = "private"`,
         fields: 'id,chatId,read'
       });
-      // Фильтруем чаты где участвует текущий пользователь и сообщение не прочитано
-      const myUnread = records.items.filter(m =>
-        m.chatId && m.chatId.includes(currentUser.id) && !m.read
-      );
-      setUnreadCount(myUnread.length);
+      const unreadChats = msgs.items.filter(m => m.chatId && m.chatId.includes(currentUser.id) && !m.read).length;
+
+      // Новые объявления
+      const [lostRes, foundRes] = await Promise.all([
+        pb.collection('posts').getList(1, 1, { filter: `type = "lost" && created > "${lastLost}"`, fields: 'id' }),
+        pb.collection('posts').getList(1, 1, { filter: `type = "found" && created > "${lastFound}"`, fields: 'id' }),
+      ]);
+
+      // Новые волонтёры и услуги
+      let volCount = 0, svcCount = 0;
+      try {
+        const volRes = await pb.collection('volunteers').getList(1, 1, { filter: `created > "${lastVol}"`, fields: 'id' });
+        volCount = volRes.totalItems;
+      } catch (e) {}
+      try {
+        const svcRes = await pb.collection('services').getList(1, 1, { filter: `created > "${lastSvc}"`, fields: 'id' });
+        svcCount = svcRes.totalItems;
+      } catch (e) {}
+
+      setBadges({
+        lost: lostRes.totalItems,
+        found: foundRes.totalItems,
+        volunteers: volCount,
+        chats: unreadChats,
+        services: svcCount,
+      });
     } catch (e) {}
+  };
+
+  const handleNav = (path) => {
+    // Сбрасываем значок при переходе
+    if (path.includes('lost')) localStorage.setItem('lastVisitLost', new Date().toISOString());
+    if (path.includes('found')) localStorage.setItem('lastVisitFound', new Date().toISOString());
+    if (path === '/volunteers') localStorage.setItem('lastVisitVolunteers', new Date().toISOString());
+    if (path === '/services') localStorage.setItem('lastVisitServices', new Date().toISOString());
+    navigate(path);
   };
 
   const navItems = [
     { path: '/home', icon: HomeIcon, label: 'Главная' },
-    { path: '/create-post?type=lost', icon: SearchIcon, label: 'Потерял' },
-    { path: '/create-post?type=found', icon: PawIcon, label: 'Нашёл' },
-    { path: '/volunteers', icon: VolunteerIcon, label: 'Волонтёры' },
-    { path: '/chats', icon: ChatIcon, label: 'Чаты', badge: unreadCount },
-    { path: '/services', icon: () => <span style={{fontSize: '22px'}}>🛎️</span>, label: 'Услуги' }
+    { path: '/create-post?type=lost', icon: SearchIcon, label: 'Потерял', badge: badges.lost },
+    { path: '/create-post?type=found', icon: PawIcon, label: 'Нашёл', badge: badges.found },
+    { path: '/volunteers', icon: VolunteerIcon, label: 'Волонтёры', badge: badges.volunteers },
+    { path: '/chats', icon: ChatIcon, label: 'Чаты', badge: badges.chats },
+    { path: '/services', icon: () => <span style={{fontSize: '22px'}}>🛎️</span>, label: 'Услуги', badge: badges.services }
   ];
 
   const isActive = (path) => {
@@ -47,12 +83,8 @@ function BottomNav() {
     if (path === '/chats') {
       return location.pathname === '/chats' || location.pathname.startsWith('/chat/');
     }
-    if (path === '/volunteers') {
-      return location.pathname.startsWith('/volunteers');
-    }
-    if (path === '/services') {
-      return location.pathname.startsWith('/services');
-    }
+    if (path === '/volunteers') return location.pathname.startsWith('/volunteers');
+    if (path === '/services') return location.pathname.startsWith('/services');
     return location.pathname === path;
   };
 
@@ -65,7 +97,7 @@ function BottomNav() {
           <div
             key={item.path}
             className={'nav-item ' + (active ? 'active' : '')}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNav(item.path)}
           >
             <div className="nav-icon" style={{position:'relative'}}>
               <Icon active={active} />
