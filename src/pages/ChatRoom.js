@@ -88,8 +88,7 @@ function ChatRoom() {
         text,
         chatType: chatType || 'group'
       });
-      // Сразу подгружаем новые сообщения
-      fetchMessages(false);
+      // polling подхватит новое сообщение
     } catch (e) {
       console.error(e);
       setNewMessage(text);
