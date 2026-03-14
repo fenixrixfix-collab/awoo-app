@@ -220,7 +220,9 @@ function Home() {
             {posts.map(post => (
               <div key={post.id} className="post-card" onClick={() => navigate(`/post/${post.id}`)}>
                 <div className="post-header">
-                  <span className={`post-type ${post.type}`}>{post.type === 'lost' ? '🔍 Потерялся' : '🐾 Найден'}</span>
+                  <span className={`post-type ${post.type}`}>
+                    {post.type === 'lost' ? '🔍 Потерялся' : post.type === 'service' ? '🛎️ Реклама' : post.type === 'help' ? '🆘 Нужна помощь' : '🐾 Найден'}
+                  </span>
                   <span className="post-time">{getTimeAgo(post.created)}</span>
                 </div>
                 {post.image && (

@@ -88,7 +88,7 @@ function CreatePost() {
           setFormData(f => isAdvert ? { ...f, serviceAddress: address } : { ...f, location: address });
         } finally { setGeoLoading(false); }
       },
-      () => { alert('Не удалось получить геолокацию'); setGeoLoading(false); },
+      () => { setGeoLoading(false); }, // тихо игнорируем ошибку геолокации
       { enableHighAccuracy: true }
     );
   };
