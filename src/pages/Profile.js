@@ -57,12 +57,13 @@ function Profile() {
  
   const handleTogglePhoneHidden = async () => {
     try {
-      const updated = await pb.collection('users').update(currentUser.id, {
+      const updated = await pb.collection('users').update(pb.authStore.model.id, {
         phoneHidden: !user.phoneHidden
       });
       pb.authStore.save(pb.authStore.token, updated);
       setUser(updated);
     } catch (e) {
+      console.error(e);
       alert('Ошибка при сохранении');
     }
   };
