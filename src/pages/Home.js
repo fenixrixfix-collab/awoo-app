@@ -235,7 +235,7 @@ function Home() {
         )}
         </div>
  
-      <div className="fab" onClick={() => navigate('/create-post')}>➕</div>
+
       <BottomNav />
     </div>
   );
