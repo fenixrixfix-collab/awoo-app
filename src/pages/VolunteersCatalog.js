@@ -4,14 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Volunteers.css';
 
+const mockVolunteers = [
+  { id: 1, name: 'Мария Соколова', district: 'Центральный', rating: 4.9, helpCount: 45, description: '5 лет опыта волонтёрства' },
+  { id: 2, name: 'Дмитрий Петров', district: 'Советский', rating: 5.0, helpCount: 38, description: 'Кинолог-любитель' },
+  { id: 3, name: 'Анна Иванова', district: 'Октябрьский', rating: 4.8, helpCount: 52, description: 'Помогаю бездомным животным' },
+];
+
 function VolunteersCatalog() {
-  const [volunteers, setVolunteers] = useState([]);
+  // null = идёт загрузка, массив = данные загружены
+  const [volunteers, setVolunteers] = useState(null);
   const [filter, setFilter] = useState('all');
   const [userDistrict, setUserDistrict] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Получаем район пользователя при загрузке
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
@@ -26,19 +32,18 @@ function VolunteersCatalog() {
   }, []);
 
   const fetchVolunteers = useCallback(async () => {
+    setVolunteers(null);
     try {
       let filterStr = 'userType = "volunteer"';
-      if (filter === 'available') filterStr += ' && isAvailable = true';
       if (filter === 'mydistrict' && userDistrict) filterStr += ` && district = "${userDistrict}"`;
-      
+
       const records = await pb.collection('users').getList(1, 50, {
         sort: '-created',
         filter: filterStr,
       });
-      setVolunteers(records.items);
-    } catch (error) {
-      console.error('Error fetching volunteers:', error);
-      setVolunteers([]);
+      setVolunteers(records.items.length > 0 ? records.items : mockVolunteers);
+    } catch {
+      setVolunteers(mockVolunteers);
     }
   }, [filter, userDistrict]);
 
@@ -46,17 +51,16 @@ function VolunteersCatalog() {
     fetchVolunteers();
   }, [fetchVolunteers]);
 
-  const mockVolunteers = [
-    { id: 1, name: 'Мария Соколова', district: 'Центральный', rating: 4.9, helpCount: 45, isAvailable: true, services: ['Передержка', 'Транспорт', 'Выгул'], description: '5 лет опыта волонтёрства' },
-    { id: 2, name: 'Дмитрий Петров', district: 'Советский', rating: 5.0, helpCount: 38, isAvailable: false, services: ['Поиск', 'Дрессировка'], description: 'Кинолог-любитель' },
-    { id: 3, name: 'Анна Иванова', district: 'Октябрьский', rating: 4.8, helpCount: 52, isAvailable: true, services: ['Передержка', 'Финансы'], description: 'Помогаю бездомным животным' },
-  ];
-
-  const displayData = volunteers.length > 0 ? volunteers : mockVolunteers;
+  const displayData = (() => {
+    if (!volunteers) return [];
+    let data = [...volunteers];
+    if (filter === 'toprated') data.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (filter === 'mydistrict' && userDistrict) data = data.filter(v => v.district === userDistrict);
+    return data;
+  })();
 
   const filters = [
     { value: 'all', label: 'Все', icon: '' },
-    { value: 'available', label: 'Свободны', icon: '✓' },
     { value: 'dogs', label: 'Собаки', icon: '🐕' },
     { value: 'cats', label: 'Кошки', icon: '🐈' },
     { value: 'mydistrict', label: 'Мой район', icon: '📍' },
@@ -95,31 +99,37 @@ function VolunteersCatalog() {
       )}
 
       <div className="content">
-        {volunteers.length === 0 ? (
+        {volunteers === null ? (
           <div className="loading-state"><div className="spinner"></div><p>Загрузка...</p></div>
+        ) : displayData.length === 0 ? (
+          <div style={{textAlign:'center', padding:'40px 20px', color:'#888'}}>
+            <div style={{fontSize:'40px'}}>🔍</div>
+            <p>Волонтёры не найдены</p>
+          </div>
         ) : (
           <div className="volunteers-list">
             {displayData.map(vol => (
               <div key={vol.id} className="volunteer-card">
                 <div className="vol-header">
-                  <div className="vol-avatar">👤</div>
+                  <div className="vol-avatar">
+                    {vol.avatar
+                      ? <img src={pb.files.getUrl(vol, vol.avatar)} alt={vol.name} style={{width:'48px',height:'48px',borderRadius:'50%',objectFit:'cover'}} />
+                      : '👤'
+                    }
+                  </div>
                   <div className="vol-info">
                     <div className="vol-name">{vol.name}</div>
-                    <div className="vol-district">📍 {vol.district || 'Центральный район'}</div>
+                    {vol.district && <div className="vol-district">📍 {vol.district}</div>}
                     <div className="vol-rating">
                       <span className="stars">⭐</span>
                       <span className="rating-val">{vol.rating || '5.0'}</span>
                       <span className="help-count">• {vol.helpCount || 0} помощей</span>
                     </div>
                   </div>
-                  <div className={`status-badge ${vol.isAvailable ? 'available' : 'busy'}`}>
-                    {vol.isAvailable ? '✓ Свободен' : '⏰ Занят'}
-                  </div>
                 </div>
-                <div className="vol-services">
-                  {(vol.services || ['Передержка']).map((s, i) => <span key={i} className="service-tag">{s}</span>)}
-                </div>
-                <div className="vol-description">{vol.description || 'Помогаю животным'}</div>
+                {(vol.bio || vol.description) && (
+                  <div className="vol-description">{vol.bio || vol.description}</div>
+                )}
                 <div className="vol-actions">
                   <button className="btn-profile" onClick={() => {
                     if (typeof vol.id === 'string') navigate(`/profile/${vol.id}`);
@@ -136,12 +146,9 @@ function VolunteersCatalog() {
         )}
       </div>
 
-      <div className="fab" onClick={() => navigate('/profile')}>➕</div>
       <BottomNav />
     </div>
   );
 }
 
 export default VolunteersCatalog;
-
-
