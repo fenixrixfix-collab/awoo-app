@@ -61,9 +61,11 @@ function CreatePost() {
       const data = await res.json();
       const addr = data.address;
       const readable = [addr.road, addr.suburb, addr.city || addr.town || addr.village].filter(Boolean).join(', ');
-      setFormData(f => ({ ...f, location: readable || `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
+      const address = readable || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setFormData(f => isAdvert ? { ...f, serviceAddress: address } : { ...f, location: address });
     } catch {
-      setFormData(f => ({ ...f, location: `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
+      const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setFormData(f => isAdvert ? { ...f, serviceAddress: address } : { ...f, location: address });
     }
   };
 
@@ -79,9 +81,11 @@ function CreatePost() {
           const data = await res.json();
           const addr = data.address;
           const readable = [addr.road, addr.suburb, addr.city || addr.town || addr.village].filter(Boolean).join(', ');
-          setFormData(f => ({ ...f, location: readable || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+          const address = readable || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setFormData(f => isAdvert ? { ...f, serviceAddress: address } : { ...f, location: address });
         } catch {
-          setFormData(f => ({ ...f, location: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}` }));
+          const address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setFormData(f => isAdvert ? { ...f, serviceAddress: address } : { ...f, location: address });
         } finally { setGeoLoading(false); }
       },
       () => { alert('Не удалось получить геолокацию'); setGeoLoading(false); },
@@ -97,7 +101,7 @@ function CreatePost() {
     if (isHelp && !formData.helpDescription) { setError('Опишите проблему'); return; }
     if (isAdvert && !formData.serviceTitle) { setError('Введите название услуги'); return; }
     if (!isHelp && !isAdvert && !formData.petName) { setError('Введите кличку питомца'); return; }
-    if (!isHelp && !formData.location) { setError('Укажите место'); return; }
+    if (!isHelp && !isAdvert && !formData.location) { setError('Укажите место'); return; }
 
     setLoading(true);
     try {
@@ -125,6 +129,8 @@ function CreatePost() {
         data.append('location', formData.serviceAddress);
         data.append('reward', formData.servicePrice);
         data.append('date', formData.date);
+        if (geoCoords.lat) data.append('lat', geoCoords.lat);
+        if (geoCoords.lng) data.append('lng', geoCoords.lng);
       } else {
         // Обычное объявление нашёл/потерял
         data.append('petName', formData.petName);
@@ -303,7 +309,36 @@ function CreatePost() {
           </div>
           <div className="form-field">
             <label className="form-label">Адрес / район</label>
-            <input type="text" name="serviceAddress" className="form-input" placeholder="Где оказывается услуга?" value={formData.serviceAddress} onChange={handleChange} />
+            <div style={{display:'flex', gap:'10px'}}>
+              <input type="text" name="serviceAddress" className="form-input" placeholder="Где оказывается услуга?" value={formData.serviceAddress} onChange={handleChange} style={{flex:1}} />
+              <button type="button" onClick={getLocation} disabled={geoLoading}
+                style={{padding:'12px', background:'#F3E5F5', border:'2px solid #E1BEE7', borderRadius:'10px', cursor:'pointer', fontSize:'20px', minWidth:'48px'}}>
+                {geoLoading ? '⏳' : geoCoords.lat ? '✅' : '📍'}
+              </button>
+            </div>
+            <button type="button" onClick={() => setShowMap(s => !s)}
+              style={{marginTop:'8px', background:'none', border:'1px solid #BA68C8', color:'#BA68C8', borderRadius:'8px', padding:'8px 12px', cursor:'pointer', fontSize:'13px'}}>
+              🗺️ {showMap ? 'Скрыть карту' : 'Выбрать на карте'}
+            </button>
+            {showMap && (
+              <div style={{marginTop:'10px', borderRadius:'12px', overflow:'hidden', height:'220px'}}>
+                <Map
+                  initialViewState={{longitude: geoCoords.lng || 37.6173, latitude: geoCoords.lat || 55.7558, zoom: 13}}
+                  style={{width:'100%', height:'100%'}}
+                  mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                  onClick={(e) => handleMapPick(e.lngLat.lat, e.lngLat.lng)}
+                  cursor="crosshair"
+                >
+                  <NavigationControl position="top-right" />
+                  {geoCoords.lat && (
+                    <Marker longitude={geoCoords.lng} latitude={geoCoords.lat} anchor="bottom">
+                      <div style={{fontSize:'28px'}}>📍</div>
+                    </Marker>
+                  )}
+                </Map>
+                <div style={{fontSize:'12px', color:'#999', marginTop:'4px', textAlign:'center'}}>Нажмите на карту чтобы выбрать место</div>
+              </div>
+            )}
           </div>
         </div>
 
