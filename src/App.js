@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import CreatePost from './pages/CreatePost';
+import CreatePostChoose from './pages/CreatePostChoose';
 import PostDetail from './pages/PostDetail';
 import Profile from './pages/Profile';
 import VolunteersCatalog from './pages/VolunteersCatalog';
@@ -30,11 +31,9 @@ function App() {
     const unsubscribe = pb.authStore.onChange((token, model) => {
       setUser(model);
     });
- 
     const splashTimer = setTimeout(() => {
       setShowSplash(false);
     }, 2500);
- 
     return () => {
       unsubscribe();
       clearTimeout(splashTimer);
@@ -50,6 +49,7 @@ function App() {
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/home" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/home" />} />
           <Route path="/home" element={user ? <Home /> : <Navigate to="/login" />} />
+          <Route path="/create-post/choose" element={user ? <CreatePostChoose /> : <Navigate to="/login" />} />
           <Route path="/create-post" element={user ? <CreatePost /> : <Navigate to="/login" />} />
           <Route path="/post/:id" element={user ? <PostDetail /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
@@ -71,4 +71,3 @@ function App() {
 }
  
 export default App;
- 
