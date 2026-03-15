@@ -87,6 +87,8 @@ function Profile() {
     } catch { alert('Ошибка при сохранении'); }
     finally { setEditSaving(false); }
   };
+
+  const getServiceCategories = (u) => {
     try {
       const cats = u?.serviceCategories;
       if (!cats) return [];
