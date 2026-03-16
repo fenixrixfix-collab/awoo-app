@@ -18,6 +18,8 @@ function PostDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [showPhone, setShowPhone] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const [postAuthor, setPostAuthor] = useState(null);
   const fileInputRef = useRef(null);
   const currentUser = pb.authStore.model;
@@ -31,6 +33,10 @@ function PostDetail() {
     try {
       const record = await pb.collection('posts').getOne(id);
       setPost(record);
+      // Инициализируем лайки
+      const likedBy = (() => { try { return JSON.parse(record.likedBy || '[]'); } catch { return []; } })();
+      setLikesCount(record.likes || 0);
+      setLiked(currentUser ? likedBy.includes(currentUser.id) : false);
       // Увеличиваем счётчик просмотров
       try {
         await pb.collection('posts').update(id, { views: (record.views || 0) + 1 });
@@ -46,6 +52,33 @@ function PostDetail() {
       navigate('/home');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!currentUser) return;
+    try {
+      const record = await pb.collection('posts').getOne(id);
+      const likedBy = (() => { try { return JSON.parse(record.likedBy || '[]'); } catch { return []; } })();
+      const isLiked = likedBy.includes(currentUser.id);
+      const newLikedBy = isLiked ? likedBy.filter(uid => uid !== currentUser.id) : [...likedBy, currentUser.id];
+      const newLikes = isLiked ? (record.likes || 1) - 1 : (record.likes || 0) + 1;
+      await pb.collection('posts').update(id, { likes: newLikes, likedBy: JSON.stringify(newLikedBy) });
+      setLiked(!isLiked);
+      setLikesCount(newLikes);
+      setPost(p => ({ ...p, likes: newLikes }));
+    } catch (e) { console.error(e); }
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.petName, text: post.description || '', url });
+      } catch (e) {}
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Ссылка скопирована!');
     }
   };
 
@@ -175,17 +208,32 @@ function PostDetail() {
   return (
     <div className="post-detail-page">
       {/* Header */}
-      <div className="header-fixed">
-        <div className="back-btn" onClick={() => navigate(-1)} style={{cursor:'pointer', fontSize:'24px'}}>←</div>
-        <div className="header-actions">
-          <span className="header-icon">🤍</span>
-          <span className="header-icon">↗️</span>
+      <div className="header-fixed" style={{
+        background: post.image ? 'transparent' : 'linear-gradient(135deg, #3B5998 0%, #6BA3E8 100%)',
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px'
+      }}>
+        <div onClick={() => navigate(-1)} style={{cursor:'pointer', fontSize:'24px', color:'white', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center'}}>←</div>
+        <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+          {/* Лайк */}
+          <div onClick={handleLike} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'20px', padding:'6px 12px', display:'flex', alignItems:'center', gap:'4px'}}>
+            <span style={{fontSize:'18px'}}>{liked ? '❤️' : '🤍'}</span>
+            {likesCount > 0 && <span style={{color:'white', fontSize:'13px', fontWeight:'700'}}>{likesCount}</span>}
+          </div>
+          {/* Поделиться */}
+          <div onClick={handleShare} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
+            ↗️
+          </div>
         </div>
       </div>
 
-      {/* Photo — без бейджа типа на фото */}
+      {/* Отступ сверху если нет фото */}
+      {!post.image && <div style={{height:'60px'}} />}
+
+      {/* Photo */}
       {post.image && (
-        <div className="post-photo">
+        <div className="post-photo" style={{paddingTop:'0'}}>
           <img src={getImageUrl(post, post.image)} alt={post.petName} />
         </div>
       )}
