@@ -16,7 +16,7 @@ function PostDetail() {
   const [commentPhoto, setCommentPhoto] = useState(null);
   const [commentPhotoPreview, setCommentPhotoPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [replyTo, setReplyTo] = useState(null); // { id, userName }
+  const [replyTo, setReplyTo] = useState(null);
   const [showPhone, setShowPhone] = useState(false);
   const [postAuthor, setPostAuthor] = useState(null);
   const fileInputRef = useRef(null);
@@ -31,6 +31,10 @@ function PostDetail() {
     try {
       const record = await pb.collection('posts').getOne(id);
       setPost(record);
+      // Увеличиваем счётчик просмотров
+      try {
+        await pb.collection('posts').update(id, { views: (record.views || 0) + 1 });
+      } catch (e) {}
       if (record.userId) {
         try {
           const author = await pb.collection('users').getOne(record.userId);
@@ -98,10 +102,13 @@ function PostDetail() {
       formData.append('userName', currentUser.name || currentUser.username || 'Пользователь');
       formData.append('text', commentText.trim());
       formData.append('parentId', replyTo ? replyTo.id : '');
-      if (commentPhoto) {
-        formData.append('photo', commentPhoto);
-      }
+      if (commentPhoto) formData.append('photo', commentPhoto);
       await pb.collection('comments').create(formData);
+      // Увеличиваем счётчик откликов
+      try {
+        await pb.collection('posts').update(id, { responses: (post.responses || 0) + 1 });
+        setPost(p => ({ ...p, responses: (p.responses || 0) + 1 }));
+      } catch (e) {}
       setCommentText('');
       setCommentPhoto(null);
       setCommentPhotoPreview(null);
@@ -124,9 +131,26 @@ function PostDetail() {
     }
   };
 
-  // Строим дерево: top-level + children
   const topLevel = comments.filter(c => !c.parentId);
   const getReplies = (parentId) => comments.filter(c => c.parentId === parentId);
+
+  // Определяем тип поста
+  const isHelp = post?.type === 'help';
+  const isService = post?.type === 'service';
+  const isLost = post?.type === 'lost';
+
+  const getStatusBadge = () => {
+    if (isHelp) return { label: '🆘 Нужна помощь', color: '#E65100' };
+    if (isService) return { label: '🛎️ Реклама', color: '#7B1FA2' };
+    if (isLost) return { label: '🔍 Потерялся', color: '#FF6B35' };
+    return { label: '🐾 Найден', color: '#4CAF50' };
+  };
+
+  const getUrgencyLabel = (urgency) => {
+    if (urgency === 'critical') return { label: '🔴 Критично', color: '#F44336' };
+    if (urgency === 'urgent') return { label: '🟠 Срочно', color: '#FF9800' };
+    return { label: '🟢 Обычная', color: '#4CAF50' };
+  };
 
   if (loading) {
     return (
@@ -146,6 +170,8 @@ function PostDetail() {
     );
   }
 
+  const badge = getStatusBadge();
+
   return (
     <div className="post-detail-page">
       {/* Header */}
@@ -157,20 +183,40 @@ function PostDetail() {
         </div>
       </div>
 
-      {/* Photo */}
+      {/* Photo — без бейджа типа на фото */}
       {post.image && (
         <div className="post-photo">
           <img src={getImageUrl(post, post.image)} alt={post.petName} />
-          <div className={`status-badge ${post.type}`}>
-            {post.type === 'lost' ? '🔍 Потерялся' : '🐾 Найден'}
-          </div>
         </div>
       )}
 
       {/* Content */}
       <div className="post-content">
         <div className="post-header-info">
-          <h1 className="post-title-main">{post.petName}</h1>
+          {/* Бейдж типа над заголовком */}
+          <div style={{display:'inline-block', background: badge.color + '18', color: badge.color,
+            borderRadius:'20px', padding:'4px 12px', fontSize:'13px', fontWeight:'700', marginBottom:'8px'}}>
+            {badge.label}
+          </div>
+
+          {/* Заголовок */}
+          <h1 className="post-title-main">
+            {isHelp ? 'Нужна помощь' : post.petName}
+          </h1>
+
+          {/* Срочность для запросов помощи */}
+          {isHelp && post.urgency && (
+            <div style={{display:'inline-block', marginBottom:'8px'}}>
+              <span style={{
+                background: getUrgencyLabel(post.urgency).color + '18',
+                color: getUrgencyLabel(post.urgency).color,
+                borderRadius:'20px', padding:'3px 10px', fontSize:'12px', fontWeight:'700'
+              }}>
+                {getUrgencyLabel(post.urgency).label}
+              </span>
+            </div>
+          )}
+
           <div className="post-meta">
             <span>⏰ {getTimeAgo(post.created)}</span>
             <span>👁️ {post.views || 0} просмотров</span>
@@ -178,70 +224,94 @@ function PostDetail() {
           </div>
         </div>
 
-        <div className="info-section">
-          <div className="info-title">Информация о питомце</div>
-          <div className="info-row">
-            <span className="info-label">Вид:</span>
-            <span className="info-value">{getPetTypeLabel(post.petType)}</span>
-          </div>
-          {post.breed && (
-            <div className="info-row">
-              <span className="info-label">Порода:</span>
-              <span className="info-value">{post.breed}</span>
-            </div>
-          )}
-          {post.reward && (
-            <div className="reward-badge">💰 Вознаграждение: {post.reward} ₽</div>
-          )}
-        </div>
-
-        {post.description && (
+        {/* Информация о животном */}
+        {!isService && (
           <div className="info-section">
-            <div className="info-title">Описание</div>
-            <p className="description-text">{post.description}</p>
+            <div className="info-title">
+              {isHelp ? 'Информация о животном' : 'Информация о питомце'}
+            </div>
+            {post.petType && (
+              <div className="info-row">
+                <span className="info-label">Вид:</span>
+                <span className="info-value">{getPetTypeLabel(post.petType)}</span>
+              </div>
+            )}
+            {post.breed && (
+              <div className="info-row">
+                <span className="info-label">Порода:</span>
+                <span className="info-value">{post.breed}</span>
+              </div>
+            )}
+            {post.reward && !isHelp && (
+              <div className="reward-badge">💰 Вознаграждение: {post.reward} ₽</div>
+            )}
+
+            {/* Описание проблемы для запроса помощи */}
+            {isHelp && post.helpDescription && (
+              <div style={{marginTop:'12px', padding:'12px', background:'#FFF8E1', borderRadius:'10px', borderLeft:'4px solid #FF9800'}}>
+                <div style={{fontSize:'13px', fontWeight:'700', color:'#E65100', marginBottom:'6px'}}>📋 Описание проблемы</div>
+                <p style={{fontSize:'14px', color:'#444', lineHeight:'1.6', margin:0}}>{post.helpDescription}</p>
+              </div>
+            )}
           </div>
         )}
 
-        <div className="info-section">
-          <div className="info-title">Место {post.type === 'lost' ? 'потери' : 'находки'}</div>
-          <div className="location-info">
-            <span>📍 {post.location}</span>
-            <span>📅 {post.date}</span>
+        {/* Описание (для обычных постов и услуг) */}
+        {post.description && !isHelp && (
+          <div className="info-section">
+            <div className="info-title">{isService ? 'Об услуге' : 'Описание'}</div>
+            <p className="description-text">{post.description}</p>
+            {isService && post.reward && (
+              <div style={{marginTop:'8px', fontWeight:'700', color:'#7B1FA2'}}>💰 {post.reward}</div>
+            )}
           </div>
-          {post.lat && post.lng && (
-            <div style={{marginTop:'12px', borderRadius:'12px', overflow:'hidden', height:'200px'}}>
-              <Map
-                initialViewState={{ longitude: post.lng, latitude: post.lat, zoom: 15 }}
-                style={{width:'100%', height:'100%'}}
-                mapStyle="https://tiles.openfreemap.org/styles/liberty"
-                scrollZoom={false}
-              >
-                <NavigationControl position="top-right" />
-                <Marker longitude={post.lng} latitude={post.lat} anchor="bottom">
-                  <div style={{fontSize:'28px'}}>📍</div>
-                </Marker>
-              </Map>
-            </div>
-          )}
-        </div>
+        )}
 
+        {/* Местоположение */}
+        {(post.location || post.lat) && (
+          <div className="info-section">
+            <div className="info-title">
+              {isHelp ? 'Местоположение' : isService ? 'Адрес' : `Место ${isLost ? 'потери' : 'находки'}`}
+            </div>
+            <div className="location-info">
+              {post.location && <span>📍 {post.location}</span>}
+              {post.date && <span>📅 {post.date}</span>}
+            </div>
+            {post.lat && post.lng && (
+              <div style={{marginTop:'12px', borderRadius:'12px', overflow:'hidden', height:'200px'}}>
+                <Map
+                  initialViewState={{ longitude: post.lng, latitude: post.lat, zoom: 15 }}
+                  style={{width:'100%', height:'100%'}}
+                  mapStyle="https://tiles.openfreemap.org/styles/liberty"
+                  scrollZoom={false}
+                >
+                  <NavigationControl position="top-right" />
+                  <Marker longitude={post.lng} latitude={post.lat} anchor="bottom">
+                    <div style={{fontSize:'28px'}}>📍</div>
+                  </Marker>
+                </Map>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Автор */}
         <div className="info-section">
           <div className="author-info">
             <div className="author-avatar">👤</div>
             <div className="author-details">
               <div className="author-name">{post.userName || 'Пользователь'}</div>
             </div>
-            <div className="verified-badge">✓ Проверен</div>
+            {postAuthor?.isVerified && <div className="verified-badge">✓ Проверен</div>}
           </div>
         </div>
 
-        {/* ===== COMMENTS ===== */}
+        {/* Комментарии */}
         <div className="info-section comments-section">
           <div className="info-title">
             💬 Комментарии {comments.length > 0 && <span className="comments-count">{comments.length}</span>}
           </div>
 
-          {/* Comment list */}
           {commentsLoading ? (
             <div className="comments-loading">Загрузка комментариев...</div>
           ) : topLevel.length === 0 ? (
@@ -265,7 +335,6 @@ function PostDetail() {
             </div>
           )}
 
-          {/* Input */}
           <div className="comment-input-box">
             {replyTo && (
               <div className="reply-indicator">
@@ -273,20 +342,14 @@ function PostDetail() {
                 <button className="reply-cancel" onClick={() => setReplyTo(null)}>✕</button>
               </div>
             )}
-
             {commentPhotoPreview && (
               <div className="comment-photo-preview">
                 <img src={commentPhotoPreview} alt="preview" />
                 <button className="remove-photo-btn" onClick={removePhoto}>✕</button>
               </div>
             )}
-
             <div className="comment-input-row">
-              <button
-                className="attach-photo-btn"
-                onClick={() => fileInputRef.current?.click()}
-                title="Прикрепить фото"
-              >📷</button>
+              <button className="attach-photo-btn" onClick={() => fileInputRef.current?.click()} title="Прикрепить фото">📷</button>
               <input
                 id="comment-input"
                 type="text"
@@ -296,27 +359,17 @@ function PostDetail() {
                 onChange={e => setCommentText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); }}}
               />
-              <button
-                className="send-comment-btn"
-                onClick={handleSubmitComment}
-                disabled={submitting || (!commentText.trim() && !commentPhoto)}
-              >
+              <button className="send-comment-btn" onClick={handleSubmitComment}
+                disabled={submitting || (!commentText.trim() && !commentPhoto)}>
                 {submitting ? '...' : '➤'}
               </button>
             </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{display:'none'}}
-              onChange={handlePhotoChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handlePhotoChange} />
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Кнопки действий */}
       <div className="action-buttons-fixed">
         <button className="action-btn btn-secondary" onClick={handleContactPhone}>
           📞 Связаться
@@ -328,7 +381,7 @@ function PostDetail() {
         )}
       </div>
 
-      {/* Phone modal */}
+      {/* Модалка телефона */}
       {showPhone && postAuthor?.phone && (
         <div className="phone-modal-overlay" onClick={() => setShowPhone(false)}>
           <div className="phone-modal" onClick={e => e.stopPropagation()}>
@@ -343,7 +396,6 @@ function PostDetail() {
   );
 }
 
-// ── Компонент одного комментария ──────────────────────────────────────────────
 function CommentItem({ comment, replies, currentUser, onReply, onDelete, getReplies }) {
   const [expanded, setExpanded] = useState(true);
   const photoUrl = comment.photo
@@ -361,20 +413,13 @@ function CommentItem({ comment, replies, currentUser, onReply, onDelete, getRepl
             <button className="comment-delete-btn" onClick={() => onDelete(comment.id)}>🗑</button>
           )}
         </div>
-
         {comment.text && <p className="comment-text">{comment.text}</p>}
-
         {photoUrl && (
           <div className="comment-photo">
             <img src={photoUrl} alt="фото к комментарию" />
           </div>
         )}
-
-        <button className="comment-reply-btn" onClick={() => onReply(comment)}>
-          ↩ Ответить
-        </button>
-
-        {/* Replies */}
+        <button className="comment-reply-btn" onClick={() => onReply(comment)}>↩ Ответить</button>
         {replies.length > 0 && (
           <div className="replies-section">
             <button className="toggle-replies-btn" onClick={() => setExpanded(p => !p)}>
@@ -383,15 +428,8 @@ function CommentItem({ comment, replies, currentUser, onReply, onDelete, getRepl
             {expanded && (
               <div className="replies-list">
                 {replies.map(reply => (
-                  <CommentItem
-                    key={reply.id}
-                    comment={reply}
-                    replies={getReplies(reply.id)}
-                    currentUser={currentUser}
-                    onReply={onReply}
-                    onDelete={onDelete}
-                    getReplies={getReplies}
-                  />
+                  <CommentItem key={reply.id} comment={reply} replies={getReplies(reply.id)}
+                    currentUser={currentUser} onReply={onReply} onDelete={onDelete} getReplies={getReplies} />
                 ))}
               </div>
             )}
@@ -402,12 +440,9 @@ function CommentItem({ comment, replies, currentUser, onReply, onDelete, getRepl
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function getTimeAgo(timestamp) {
   if (!timestamp) return 'недавно';
-  const now = new Date();
-  const postDate = new Date(timestamp);
-  const diff = Math.floor((now - postDate) / 1000);
+  const diff = Math.floor((new Date() - new Date(timestamp)) / 1000);
   if (diff < 60) return 'только что';
   if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
