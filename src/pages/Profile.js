@@ -232,12 +232,12 @@ function Profile() {
   if (loading) return <div className="loading-state"><div className="spinner"></div></div>;
 
   const tabs = [
-    ['info', '👤 Профиль'],
-    ['posts', '📋 Объявления'],
+    ['info',     '👤 Профиль'],
+    ['messages', '💬 Сообщения'],
+    ['posts',    '📋 Объявления'],
     ...(isVolunteer ? [['volunteer', '🤝 Волонтёр']] : []),
-    ...(isService ? [['service', '🛎️ Услуги']] : []),
-    ['reviews', '⭐ Отзывы'],
-    ...(isOwnProfile ? [['messages', '💬 Сообщения']] : []),
+    ...(isService   ? [['service',   '🛎️ Услуги']]   : []),
+    ['reviews',  '⭐ Отзывы'],
   ];
 
   const serviceCategories = getServiceCategories(user);
@@ -286,7 +286,7 @@ function Profile() {
       <div style={{display:'flex', borderBottom:'2px solid #E3F2FD', background:'white', overflowX:'auto'}}>
         {tabs.map(([tab, label]) => (
           <div key={tab}
-            onClick={() => tab === 'messages' ? navigate('/chats') : setActiveTab(tab)}
+            onClick={() => setActiveTab(tab)}
             style={{flex:1, textAlign:'center', padding:'12px 6px', fontSize:'12px', whiteSpace:'nowrap',
               fontWeight: activeTab===tab ? '700':'400',
               color: activeTab===tab ? '#3B5998':'#666',
@@ -353,13 +353,21 @@ function Profile() {
               </button>
             ) : (
               <div className="section">
-                {[['🔔','Уведомления'],['❓','Помощь'],['ℹ️','О приложении']].map(([icon, label]) => (
-                  <div key={label} className="menu-item">
-                    <div className="menu-icon">{icon}</div>
-                    <div className="menu-text">{label}</div>
-                    <div className="menu-arrow">→</div>
-                  </div>
-                ))}
+                <div key="notifications" className="menu-item" onClick={() => setActiveTab('notifications')} style={{cursor:'pointer'}}>
+                  <div className="menu-icon">🔔</div>
+                  <div className="menu-text">Уведомления</div>
+                  <div className="menu-arrow">→</div>
+                </div>
+                <div key="help" className="menu-item" onClick={() => setActiveTab('help')} style={{cursor:'pointer'}}>
+                  <div className="menu-icon">❓</div>
+                  <div className="menu-text">Помощь</div>
+                  <div className="menu-arrow">→</div>
+                </div>
+                <div key="about" className="menu-item" onClick={() => setActiveTab('about')} style={{cursor:'pointer'}}>
+                  <div className="menu-icon">ℹ️</div>
+                  <div className="menu-text">О приложении</div>
+                  <div className="menu-arrow">→</div>
+                </div>
               </div>
             )}
             {isOwnProfile && <button className="logout-btn" onClick={handleLogout}>Выйти из аккаунта</button>}
@@ -567,7 +575,97 @@ function Profile() {
 
       </div>
 
-      {/* Модалка редактирования профиля */}
+        {/* --- СООБЩЕНИЯ --- */}
+        {activeTab === 'messages' && (
+          <div style={{padding:'16px', textAlign:'center'}}>
+            <div style={{fontSize:'48px', marginBottom:'12px'}}>💬</div>
+            <p style={{color:'#666', marginBottom:'20px'}}>Перейти в раздел сообщений</p>
+            <button onClick={() => navigate('/chats')}
+              style={{padding:'14px 32px', background:'#3B5998', color:'white', border:'none', borderRadius:'12px', fontSize:'15px', fontWeight:'700', cursor:'pointer'}}>
+              Открыть чаты
+            </button>
+          </div>
+        )}
+
+        {/* --- УВЕДОМЛЕНИЯ --- */}
+        {activeTab === 'notifications' && isOwnProfile && (
+          <div style={{padding:'16px'}}>
+            <div style={{background:'white', borderRadius:'16px', padding:'16px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+              <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'16px', color:'#333'}}>🔔 Уведомления</div>
+              {[
+                ['Новые объявления рядом', 'Получать уведомления о потерявшихся животных'],
+                ['Запросы о помощи', 'Срочные запросы от волонтёров'],
+                ['Новые сообщения', 'Личные сообщения от пользователей'],
+                ['Отклики на мои объявления', 'Когда кто-то откликается на ваше объявление'],
+              ].map(([title, desc]) => (
+                <div key={title} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderBottom:'1px solid #F0F0F0'}}>
+                  <div>
+                    <div style={{fontSize:'14px', fontWeight:'600', color:'#333'}}>{title}</div>
+                    <div style={{fontSize:'12px', color:'#999', marginTop:'2px'}}>{desc}</div>
+                  </div>
+                  <div style={{width:'44px', height:'24px', borderRadius:'12px', background:'#3B5998', position:'relative', cursor:'pointer', flexShrink:0}}>
+                    <div style={{width:'20px', height:'20px', borderRadius:'50%', background:'white', position:'absolute', top:'2px', right:'2px', boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- ПОМОЩЬ --- */}
+        {activeTab === 'help' && (
+          <div style={{padding:'16px'}}>
+            <div style={{background:'white', borderRadius:'16px', padding:'16px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+              <div style={{fontWeight:'700', fontSize:'15px', marginBottom:'16px', color:'#333'}}>❓ Часто задаваемые вопросы</div>
+              {[
+                ['Как создать объявление?', 'Нажмите кнопку ➕ внизу экрана и заполните форму. Добавьте фото и укажите место на карте для лучших результатов.'],
+                ['Как стать волонтёром?', 'При регистрации выберите тип аккаунта "Волонтёр". Волонтёры могут создавать запросы о помощи и добавлять в чёрный список.'],
+                ['Как связаться с владельцем?', 'Откройте объявление и нажмите "Написать" или "Связаться" для звонка.'],
+                ['Как добавить услугу?', 'Зарегистрируйтесь как Поставщик услуг, выберите категории и заполните профиль.'],
+                ['Как удалить объявление?', 'Зайдите в Профиль → Объявления → нажмите "Удалить" рядом с нужным объявлением.'],
+              ].map(([q, a]) => (
+                <FaqItem key={q} question={q} answer={a} />
+              ))}
+            </div>
+            <div style={{background:'white', borderRadius:'16px', padding:'16px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', marginTop:'12px', textAlign:'center'}}>
+              <div style={{fontSize:'14px', color:'#666', marginBottom:'12px'}}>Не нашли ответ?</div>
+              <a href="mailto:fenixrixfix@gmail.com"
+                style={{display:'inline-block', padding:'12px 24px', background:'#3B5998', color:'white', borderRadius:'10px', fontSize:'14px', fontWeight:'600', textDecoration:'none'}}>
+                ✉️ Написать в поддержку
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* --- О ПРИЛОЖЕНИИ --- */}
+        {activeTab === 'about' && (
+          <div style={{padding:'16px'}}>
+            <div style={{background:'white', borderRadius:'16px', padding:'24px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', textAlign:'center', marginBottom:'12px'}}>
+              <div style={{fontSize:'60px', marginBottom:'8px'}}>🐾</div>
+              <div style={{fontSize:'24px', fontWeight:'800', color:'#3B5998', marginBottom:'4px'}}>AWOO</div>
+              <div style={{fontSize:'13px', color:'#999', marginBottom:'16px'}}>Версия 1.0.0</div>
+              <div style={{fontSize:'14px', color:'#555', lineHeight:'1.6'}}>
+                Платформа для помощи животным — розыск потерявшихся питомцев, волонтёрская поддержка и профессиональные услуги для животных.
+              </div>
+            </div>
+            <div style={{background:'white', borderRadius:'16px', padding:'16px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}>
+              {[
+                ['🔍', 'Розыск животных', 'Объявления о потерявшихся и найденных питомцах'],
+                ['🤝', 'Волонтёры', 'Помощь в поиске, передержке и транспортировке'],
+                ['🛎️', 'Услуги', 'Ветеринары, грумеры, зоотакси, кинологи'],
+                ['🚫', 'Чёрный список', 'Защита животных от жестокого обращения'],
+              ].map(([icon, title, desc]) => (
+                <div key={title} style={{display:'flex', gap:'12px', padding:'10px 0', borderBottom:'1px solid #F0F0F0'}}>
+                  <div style={{fontSize:'24px', flexShrink:0}}>{icon}</div>
+                  <div>
+                    <div style={{fontSize:'14px', fontWeight:'600', color:'#333'}}>{title}</div>
+                    <div style={{fontSize:'12px', color:'#999', marginTop:'2px'}}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       {editModal && (
         <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end'}}>
           <div style={{background:'white', borderRadius:'24px 24px 0 0', width:'100%', maxHeight:'90vh', overflowY:'auto', padding:'20px'}}>
@@ -652,6 +750,20 @@ function getTimeAgo(timestamp) {
   if (diff < 3600) return `${Math.floor(diff/60)} мин назад`;
   if (diff < 86400) return `${Math.floor(diff/3600)} ч назад`;
   return `${Math.floor(diff/86400)} дн назад`;
+}
+
+function FaqItem({ question, answer }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={{borderBottom:'1px solid #F0F0F0', paddingBottom:'8px', marginBottom:'8px'}}>
+      <div onClick={() => setOpen(o => !o)}
+        style={{display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', padding:'8px 0'}}>
+        <div style={{fontSize:'14px', fontWeight:'600', color:'#333', flex:1}}>{question}</div>
+        <div style={{fontSize:'18px', color:'#3B5998', marginLeft:'8px'}}>{open ? '▲' : '▼'}</div>
+      </div>
+      {open && <div style={{fontSize:'13px', color:'#666', lineHeight:'1.6', paddingBottom:'8px'}}>{answer}</div>}
+    </div>
+  );
 }
 
 export default Profile;
