@@ -1,43 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import pb, { getImageUrl } from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/Volunteers.css';
 
 function VolunteersRequests() {
   const [filter, setFilter] = useState('all');
+  const [requests, setRequests] = useState(null); // null = загрузка
   const navigate = useNavigate();
 
-  const mockRequests = [
-    { id: 1, author: 'Елена Петрова', time: '10 мин назад', urgency: 'critical', type: 'emergency', title: 'Срочная транспортировка в ветклинику', description: 'Собака сбита машиной, нужна помощь', district: 'Центральный', petType: 'Собака', responses: 3 },
-    { id: 2, author: 'Игорь Смирнов', time: '1 час назад', urgency: 'urgent', type: 'boarding', title: 'Передержка кошки на 3 дня', description: 'Срочная командировка', district: 'Советский', petType: 'Кошка', deadline: '20-23 февраля', responses: 5 },
-    { id: 3, author: 'Мария Козлова', time: '3 часа назад', urgency: 'normal', type: 'search', title: 'Помощь в поиске хаски', description: 'Потерялся в парке вчера вечером', district: 'Октябрьский', petType: 'Собака', responses: 8, responded: true },
-    { id: 4, author: 'Андрей Волков', time: '1 день назад', urgency: 'normal', type: 'financial', title: 'Финансовая помощь на операцию', description: 'Кошке нужна операция, не хватает 5000₽', amount: '5000 ₽', responses: 12 },
+  const filters = [
+    { value: 'all',         label: 'Все запросы' },
+    { value: 'critical',    label: '🔴 Критичные' },
+    { value: 'urgent',      label: '🟠 Срочные' },
+    { value: 'normal',      label: '🟢 Обычные' },
+    { value: 'mydistrict',  label: '📍 Мой район' },
   ];
 
-  const filters = [
-    { value: 'all', label: 'Все запросы' },
-    { value: 'urgent', label: 'Срочные' },
-    { value: 'boarding', label: 'Передержка' },
-    { value: 'transport', label: 'Транспорт' },
-    { value: 'financial', label: 'Финансы' },
-    { value: 'mydistrict', label: 'Мой район' },
-  ];
+  const fetchRequests = useCallback(async () => {
+    setRequests(null);
+    try {
+      let filterStr = 'type = "help"';
+      if (filter === 'critical') filterStr += ' && urgency = "critical"';
+      else if (filter === 'urgent') filterStr += ' && urgency = "urgent"';
+      else if (filter === 'normal') filterStr += ' && urgency = "normal"';
+
+      const records = await pb.collection('posts').getList(1, 50, {
+        filter: filterStr,
+        sort: '-created',
+      });
+      setRequests(records.items);
+    } catch (e) {
+      console.error(e);
+      setRequests([]);
+    }
+  }, [filter]);
+
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   const getUrgencyColor = (urgency) => {
-    const colors = { critical: '#F44336', urgent: '#FF9800', normal: '#4CAF50' };
-    return colors[urgency] || '#4CAF50';
+    if (urgency === 'critical') return '#F44336';
+    if (urgency === 'urgent') return '#FF9800';
+    return '#4CAF50';
   };
 
-  const getTypeIcon = (type) => {
-    const icons = { emergency: '🚨', boarding: '🏠', search: '🔍', financial: '💰', transport: '🚗' };
-    return icons[type] || '📋';
+  const getUrgencyLabel = (urgency) => {
+    if (urgency === 'critical') return '🔴 Критично';
+    if (urgency === 'urgent') return '🟠 Срочно';
+    return '🟢 Обычная';
+  };
+
+  const getPetTypeLabel = (type) => {
+    const types = { dog: '🐕 Собака', cat: '🐈 Кошка', rodent: '🐇 Грызун', bird: '🦜 Птица', other: '🐠 Другое' };
+    return types[type] || type;
   };
 
   return (
     <div className="volunteers-page">
       <div className="header">
         <div className="header-top">
-          <div className="header-title">🤝 Запросы о помощи</div>
+          <div className="header-title">🆘 Запросы о помощи</div>
           <div className="tab-switcher-small">
             <span className="tab" onClick={() => navigate('/volunteers')}>Волонтёры</span>
             <span className="tab active">Запросы</span>
@@ -53,47 +75,69 @@ function VolunteersRequests() {
       </div>
 
       <div className="content">
-        <div className="requests-list">
-          {mockRequests.map(req => (
-            <div key={req.id} className="request-card" style={{borderLeft: `4px solid ${getUrgencyColor(req.urgency)}`}}>
-              <div className="req-header">
-                <div className="req-author">
-                  <span className="author-avatar">👤</span>
-                  <span className="author-name">{req.author}</span>
-                  <span className="req-time">• {req.time}</span>
+        {requests === null ? (
+          <div className="loading-state"><div className="spinner"></div><p>Загрузка...</p></div>
+        ) : requests.length === 0 ? (
+          <div style={{textAlign:'center', padding:'40px 20px', color:'#888'}}>
+            <div style={{fontSize:'40px'}}>🆘</div>
+            <p>Запросов пока нет</p>
+          </div>
+        ) : (
+          <div className="requests-list">
+            {requests.map(req => (
+              <div key={req.id} className="request-card"
+                style={{borderLeft:`4px solid ${getUrgencyColor(req.urgency)}`, cursor:'pointer'}}
+                onClick={() => navigate(`/post/${req.id}`)}
+              >
+                <div className="req-header">
+                  <div className="req-author">
+                    <span className="author-avatar">👤</span>
+                    <span className="author-name">{req.userName || 'Волонтёр'}</span>
+                    <span className="req-time">• {getTimeAgo(req.created)}</span>
+                  </div>
+                  <div className={`urgency-badge ${req.urgency}`}>
+                    {getUrgencyLabel(req.urgency)}
+                  </div>
                 </div>
-                <div className={`urgency-badge ${req.urgency}`}>
-                  {req.urgency === 'critical' ? '🔴 Критично' : req.urgency === 'urgent' ? '🟠 Срочно' : '🟢 Обычная'}
-                </div>
-              </div>
-              <div className="req-type">{getTypeIcon(req.type)} {req.type === 'emergency' ? 'Экстренная помощь' : req.type === 'boarding' ? 'Передержка' : req.type === 'search' ? 'Поиск' : 'Финансовая помощь'}</div>
-              <div className="req-title">{req.title}</div>
-              <div className="req-description">{req.description}</div>
-              <div className="req-details">
-                {req.district && <span>📍 {req.district} район</span>}
-                {req.petType && <span>🐾 {req.petType}</span>}
-                {req.deadline && <span>📅 {req.deadline}</span>}
-                {req.amount && <span>💰 {req.amount}</span>}
-              </div>
-              <div className="req-footer">
-                <span className="responses-count">{req.responses} откликов</span>
-                <button className={`btn-respond ${req.responded ? 'responded' : ''}`} onClick={() => {
-                    if (!req.responded) alert('Отклик отправлен!');
-                  }}>
-                  {req.responded ? '✓ Вы откликнулись' : '🤝 Я могу помочь'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
+                {req.image && (
+                  <img src={getImageUrl(req, req.image)} alt="фото"
+                    style={{width:'100%', height:'160px', objectFit:'cover', borderRadius:'8px', margin:'8px 0'}} />
+                )}
+
+                {req.helpDescription && (
+                  <div className="req-description" style={{fontWeight:'500', color:'#333'}}>
+                    {req.helpDescription.length > 150 ? req.helpDescription.slice(0, 150) + '...' : req.helpDescription}
+                  </div>
+                )}
+
+                <div className="req-details" style={{marginTop:'8px'}}>
+                  {req.petType && <span>{getPetTypeLabel(req.petType)}</span>}
+                  {req.location && <span>📍 {req.location}</span>}
+                </div>
+
+                <div className="req-footer">
+                  <span className="responses-count">💬 {req.responses || 0} откликов</span>
+                  <span style={{fontSize:'12px', color:'#999'}}>👁 {req.views || 0}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <BottomNav />
     </div>
   );
 }
 
+function getTimeAgo(timestamp) {
+  if (!timestamp) return 'недавно';
+  const diff = Math.floor((new Date() - new Date(timestamp)) / 1000);
+  if (diff < 60) return 'только что';
+  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
+  return `${Math.floor(diff / 86400)} дн назад`;
+}
+
 export default VolunteersRequests;
-
-
