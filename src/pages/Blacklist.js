@@ -10,13 +10,12 @@ function Blacklist() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ phone: '', name: '', reason: '', city: '' });
+  const [form, setForm] = useState({ phone: '', name: '', reason: '', city: '', address: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchBlacklist();
-  }, []);
+  useEffect(() => { fetchBlacklist(); }, []);
 
   const fetchBlacklist = async () => {
     setLoading(true);
@@ -40,10 +39,11 @@ function Blacklist() {
         name: form.name,
         reason: form.reason,
         city: form.city,
+        address: form.address,
         addedBy: currentUser?.name,
         addedById: currentUser?.id
       });
-      setForm({ phone: '', name: '', reason: '', city: '' });
+      setForm({ phone: '', name: '', reason: '', city: '', address: '' });
       setShowForm(false);
       fetchBlacklist();
     } catch (e) {
@@ -63,6 +63,18 @@ function Blacklist() {
     }
   };
 
+  // Фильтрация по поиску — по телефону, имени, городу, адресу
+  const filtered = entries.filter(e => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      e.phone?.toLowerCase().includes(q) ||
+      e.name?.toLowerCase().includes(q) ||
+      e.city?.toLowerCase().includes(q) ||
+      e.address?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div style={{minHeight:'100vh', background:'#F5F7FA', paddingBottom:'80px'}}>
       {/* Header */}
@@ -71,8 +83,22 @@ function Blacklist() {
           <div onClick={() => navigate(-1)} style={{fontSize:'24px', cursor:'pointer'}}>←</div>
           <div style={{fontSize:'20px', fontWeight:'700'}}>🚫 Чёрный список</div>
         </div>
-        <div style={{fontSize:'13px', opacity:0.85, paddingLeft:'36px'}}>
+        <div style={{fontSize:'13px', opacity:0.85, paddingLeft:'36px', marginBottom:'12px'}}>
           Люди, замеченные в жестоком обращении с животными
+        </div>
+        {/* Поиск */}
+        <div style={{display:'flex', alignItems:'center', background:'rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px 12px', gap:'8px'}}>
+          <span style={{fontSize:'16px'}}>🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Поиск по телефону, имени, городу, адресу..."
+            style={{background:'none', border:'none', outline:'none', color:'white', fontSize:'14px', flex:1}}
+          />
+          {search && (
+            <span onClick={() => setSearch('')} style={{cursor:'pointer', fontSize:'16px', opacity:0.7}}>✕</span>
+          )}
         </div>
       </div>
 
@@ -99,17 +125,18 @@ function Blacklist() {
           <div style={{fontWeight:'700', fontSize:'16px', marginBottom:'12px'}}>Новая запись</div>
           {error && <div style={{color:'#C62828', marginBottom:'8px', fontSize:'13px'}}>{error}</div>}
           {[
-            ['phone', '📞 Телефон *', 'tel', '+7 (___) ___-__-__'],
-            ['name', '👤 Имя (если известно)', 'text', 'ФИО или псевдоним'],
-            ['city', '📍 Город', 'text', 'Красноярск, Новосибирск...'],
-            ['reason', '⚠️ Причина добавления *', 'text', 'Опишите ситуацию...'],
+            ['phone',   '📞 Телефон *',              'tel',  '+7 (___) ___-__-__'],
+            ['name',    '👤 Имя (если известно)',     'text', 'ФИО или псевдоним'],
+            ['city',    '📍 Город',                   'text', 'Красноярск, Новосибирск...'],
+            ['address', '🏠 Адрес',                   'text', 'Улица, район, ориентир...'],
+            ['reason',  '⚠️ Причина добавления *',   'text', 'Опишите ситуацию...'],
           ].map(([field, label, type, placeholder]) => (
             <div key={field} style={{marginBottom:'10px'}}>
               <div style={{fontSize:'13px', color:'#666', marginBottom:'4px'}}>{label}</div>
               {field === 'reason' ? (
                 <textarea value={form[field]} onChange={e => setForm({...form, [field]: e.target.value})}
                   placeholder={placeholder} rows={3}
-                  style={{width:'100%', padding:'10px', border:'1px solid #E0E0E0', borderRadius:'8px', fontSize:'14px', resize:'none', boxSizing:'border-box'}} />
+                  style={{width:'100%', padding:'10px', border:'1px solid #E0E0E0', borderRadius:'8px', fontSize:'14px', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}} />
               ) : (
                 <input type={type} value={form[field]} onChange={e => setForm({...form, [field]: e.target.value})}
                   placeholder={placeholder}
@@ -130,17 +157,24 @@ function Blacklist() {
         </div>
       )}
 
+      {/* Результат поиска */}
+      {search.trim() && (
+        <div style={{padding:'0 12px 8px', fontSize:'13px', color:'#666'}}>
+          Найдено: {filtered.length} {filtered.length === 1 ? 'запись' : filtered.length >= 2 && filtered.length <= 4 ? 'записи' : 'записей'}
+        </div>
+      )}
+
       {/* List */}
       <div style={{padding:'0 12px'}}>
         {loading ? (
           <div style={{textAlign:'center', padding:'40px', color:'#999'}}>Загрузка...</div>
-        ) : entries.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div style={{textAlign:'center', padding:'40px 20px', color:'#999'}}>
-            <div style={{fontSize:'48px'}}>✅</div>
-            <p>Чёрный список пуст</p>
+            <div style={{fontSize:'48px'}}>{search ? '🔍' : '✅'}</div>
+            <p>{search ? 'Ничего не найдено' : 'Чёрный список пуст'}</p>
           </div>
         ) : (
-          entries.map(entry => (
+          filtered.map(entry => (
             <div key={entry.id} style={{background:'white', borderRadius:'12px', padding:'14px', marginBottom:'12px', boxShadow:'0 2px 8px rgba(0,0,0,0.08)', borderLeft:'4px solid #C62828'}}>
               <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                 <div style={{flex:1}}>
@@ -150,6 +184,7 @@ function Blacklist() {
                   </div>
                   {entry.name && <div style={{fontSize:'14px', color:'#333', marginBottom:'4px'}}>👤 {entry.name}</div>}
                   {entry.city && <div style={{fontSize:'13px', color:'#666', marginBottom:'4px'}}>📍 {entry.city}</div>}
+                  {entry.address && <div style={{fontSize:'13px', color:'#666', marginBottom:'4px'}}>🏠 {entry.address}</div>}
                   <div style={{fontSize:'13px', color:'#555', background:'#FFF5F5', padding:'8px', borderRadius:'6px', marginTop:'6px'}}>
                     ⚠️ {entry.reason}
                   </div>
