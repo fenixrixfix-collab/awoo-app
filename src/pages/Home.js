@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import pb, { getImageUrl } from '../services/pocketbase';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +5,7 @@ import Map, { Marker, Popup, NavigationControl } from 'react-map-gl/maplibre';
 import BottomNav from '../components/BottomNav';
 import '../styles/Home.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
- 
+
 function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +14,11 @@ function Home() {
   const [viewMode, setViewMode] = useState('list');
   const [selectedPost, setSelectedPost] = useState(null);
   const [badges, setBadges] = useState({ ls: 0, cs: 0 });
-  const [filterBadges, setFilterBadges] = useState({ lost: 0, found: 0 });
+  const [filterBadges, setFilterBadges] = useState({ lost: 0, found: 0, help: 0, services: 0 });
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
- 
+
   useEffect(() => {
-    // Тихо получаем геолокацию при загрузке
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -28,7 +26,7 @@ function Home() {
       );
     }
   }, []);
- 
+
   useEffect(() => { fetchPosts(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -42,78 +40,79 @@ function Home() {
     const lastVisitLS = localStorage.getItem('lastVisitLS') || '2000-01-01';
     const lastVisitCS = localStorage.getItem('lastVisitCS') || '2000-01-01';
     try {
-      // ЛС — непрочитанные сообщения
       const msgs = await pb.collection('messages').getList(1, 200, {
         filter: `userId != "${currentUser.id}" && chatType = "private"`,
         fields: 'id,chatId,read'
       });
       const unreadMsgs = msgs.items.filter(m => m.chatId && m.chatId.includes(currentUser.id) && !m.read).length;
 
-      // ЧС — новые записи в blacklist с последнего визита
       let csCount = 0;
       try {
         const cs = await pb.collection('blacklist').getList(1, 1, {
-          filter: `created > "${lastVisitCS}"`,
-          fields: 'id'
+          filter: `created > "${lastVisitCS}"`, fields: 'id'
         });
         csCount = cs.totalItems;
       } catch (e) {}
 
-      // Новые объявления для фильтров
       const toFilter = (iso) => iso.replace('T', ' ').replace('Z', '').slice(0, 19);
-      const lastLost = toFilter(localStorage.getItem('lastVisitFilterLost') || '2000-01-01T00:00:00Z');
-      const lastFound = toFilter(localStorage.getItem('lastVisitFilterFound') || '2000-01-01T00:00:00Z');
-      const [lostRes, foundRes] = await Promise.all([
+      const lastLost     = toFilter(localStorage.getItem('lastVisitFilterLost')     || '2000-01-01T00:00:00Z');
+      const lastFound    = toFilter(localStorage.getItem('lastVisitFilterFound')    || '2000-01-01T00:00:00Z');
+      const lastHelp     = toFilter(localStorage.getItem('lastVisitFilterHelp')     || '2000-01-01T00:00:00Z');
+      const lastServices = toFilter(localStorage.getItem('lastVisitFilterServices') || '2000-01-01T00:00:00Z');
+      const [lostRes, foundRes, helpRes, servicesRes] = await Promise.all([
         pb.collection('posts').getList(1, 1, { filter: `type = "lost" && created > "${lastLost}" && userId != "${currentUser.id}"`, fields: 'id' }),
         pb.collection('posts').getList(1, 1, { filter: `type = "found" && created > "${lastFound}" && userId != "${currentUser.id}"`, fields: 'id' }),
+        pb.collection('posts').getList(1, 1, { filter: `type = "help" && created > "${lastHelp}" && userId != "${currentUser.id}"`, fields: 'id' }),
+        pb.collection('posts').getList(1, 1, { filter: `type = "service" && created > "${lastServices}" && userId != "${currentUser.id}"`, fields: 'id' }),
       ]);
-      setFilterBadges({ lost: lostRes.totalItems, found: foundRes.totalItems });
-
+      setFilterBadges({ lost: lostRes.totalItems, found: foundRes.totalItems, help: helpRes.totalItems, services: servicesRes.totalItems });
       setBadges({ ls: unreadMsgs, cs: csCount });
     } catch (e) {}
   };
- 
+
   const fetchPosts = async () => {
     setLoading(true);
     try {
       let filterStr = '';
       if (filter === 'lost') filterStr = 'type = "lost"';
       else if (filter === 'found') filterStr = 'type = "found"';
+      else if (filter === 'help') filterStr = 'type = "help"';
+      else if (filter === 'services') filterStr = 'type = "service"';
       else if (filter === 'dog') filterStr = 'petType = "dog"';
       else if (filter === 'cat') filterStr = 'petType = "cat"';
       else if (filter === 'other') filterStr = 'petType != "dog" && petType != "cat"';
-      else if (filter === 'services') filterStr = 'type = "service"';
- 
+
       const queryOptions = { sort: '-created' };
       if (filterStr) queryOptions.filter = filterStr;
- 
+
       const records = await pb.collection('posts').getList(1, 50, queryOptions);
-      let items = records.items;
- 
-      // Сортировка по близости если есть геолокация и фильтр "рядом"
-      if (filter === 'map') {
-        items = items.filter(p => p.lat && p.lng);
-      }
- 
-      setPosts(items);
+      setPosts(records.items);
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
     }
   };
- 
+
+  // Новый порядок фильтров
   const filters = [
-    { value: 'all', label: 'Все' },
-    { value: 'lost', label: '🔍 Потерялись', badge: filterBadges.lost },
-    { value: 'found', label: '🐾 Найдены', badge: filterBadges.found },
-    { value: 'dog', label: '🐕 Собаки' },
-    { value: 'cat', label: '🐈 Кошки' },
-    { value: 'other', label: '🐦 Другое' },
-    { value: 'map', label: '🗺️ На карте' },
-    { value: 'services', label: '🛎️ Услуги' },
+    { value: 'lost',     label: '🔍 Потерялись', badge: filterBadges.lost },
+    { value: 'found',    label: '🐾 Найдены',    badge: filterBadges.found },
+    { value: 'help',     label: '🆘 Помощь',     badge: filterBadges.help },
+    { value: 'services', label: '🛎️ Услуги',     badge: filterBadges.services },
+    { value: 'map',      label: '🗺️ На карте' },
+    { value: 'all',      label: 'Все' },
+    { value: 'dog',      label: '🐕 Собаки' },
+    { value: 'cat',      label: '🐈 Кошки' },
+    { value: 'other',    label: '🐦 Другое' },
   ];
- 
+
+  const getUrgencyBadge = (urgency) => {
+    if (urgency === 'critical') return { label: '🔴 Критично', color: '#F44336' };
+    if (urgency === 'urgent')   return { label: '🟠 Срочно',   color: '#FF9800' };
+    return null; // обычная — не показываем
+  };
+
   return (
     <div className="home-page">
       <div className="header">
@@ -148,6 +147,8 @@ function Home() {
             <button key={f.value} className={`filter-btn ${filter === f.value ? 'active' : ''}`} style={{position:'relative'}} onClick={() => {
               if (f.value === 'lost') localStorage.setItem('lastVisitFilterLost', new Date().toISOString());
               if (f.value === 'found') localStorage.setItem('lastVisitFilterFound', new Date().toISOString());
+              if (f.value === 'help') localStorage.setItem('lastVisitFilterHelp', new Date().toISOString());
+              if (f.value === 'services') localStorage.setItem('lastVisitFilterServices', new Date().toISOString());
               if (f.value === 'map') setViewMode('map');
               else setViewMode('list');
               setFilter(f.value);
@@ -158,7 +159,7 @@ function Home() {
           ))}
         </div>
       </div>
- 
+
       <div className="content">
         {(viewMode === 'map' || filter === 'map') ? (
           <div style={{height:'calc(100vh - 200px)'}}>
@@ -173,29 +174,18 @@ function Home() {
             >
               <NavigationControl position="top-right" />
               {posts.filter(p => p.lat && p.lng).map(post => (
-                <Marker
-                  key={post.id}
-                  longitude={post.lng}
-                  latitude={post.lat}
-                  anchor="bottom"
-                  onClick={() => setSelectedPost(post)}
-                >
+                <Marker key={post.id} longitude={post.lng} latitude={post.lat} anchor="bottom" onClick={() => setSelectedPost(post)}>
                   <div style={{fontSize:'24px', cursor:'pointer'}}>
-                    {post.type === 'lost' ? '🔍' : '🐾'}
+                    {post.type === 'lost' ? '🔍' : post.type === 'help' ? '🆘' : post.type === 'service' ? '🛎️' : '🐾'}
                   </div>
                 </Marker>
               ))}
               {selectedPost && (
-                <Popup
-                  longitude={selectedPost.lng}
-                  latitude={selectedPost.lat}
-                  anchor="top"
-                  onClose={() => setSelectedPost(null)}
-                >
+                <Popup longitude={selectedPost.lng} latitude={selectedPost.lat} anchor="top" onClose={() => setSelectedPost(null)}>
                   <div style={{minWidth:'150px', padding:'4px'}}>
-                    <div style={{fontWeight:'600'}}>{selectedPost.petName}</div>
-                    <div style={{fontSize:'12px', color: selectedPost.type === 'lost' ? '#FF6B35' : '#4CAF50'}}>
-                      {selectedPost.type === 'lost' ? '🔍 Потерялся' : '🐾 Найден'}
+                    <div style={{fontWeight:'600'}}>{selectedPost.type === 'help' ? 'Нужна помощь' : selectedPost.petName}</div>
+                    <div style={{fontSize:'12px', color: selectedPost.type === 'lost' ? '#FF6B35' : selectedPost.type === 'help' ? '#E65100' : '#4CAF50'}}>
+                      {selectedPost.type === 'lost' ? '🔍 Потерялся' : selectedPost.type === 'help' ? '🆘 Помощь' : selectedPost.type === 'service' ? '🛎️ Реклама' : '🐾 Найден'}
                     </div>
                     <div style={{fontSize:'12px'}}>📍 {selectedPost.location}</div>
                     <button onClick={() => navigate(`/post/${selectedPost.id}`)} style={{marginTop:'6px', width:'100%', padding:'4px', background:'#3B5998', color:'white', border:'none', borderRadius:'4px', cursor:'pointer', fontSize:'12px'}}>
@@ -217,42 +207,67 @@ function Home() {
           </div>
         ) : (
           <div className="posts-feed">
-            {posts.map(post => (
-              <div key={post.id} className="post-card" onClick={() => navigate(`/post/${post.id}`)}>
-                <div className="post-header">
-                  <span className={`post-type ${post.type}`}>
-                    {post.type === 'lost' ? '🔍 Потерялся' : post.type === 'service' ? '🛎️ Реклама' : post.type === 'help' ? '🆘 Нужна помощь' : '🐾 Найден'}
-                  </span>
-                  <span className="post-time">{getTimeAgo(post.created)}</span>
+            {posts.map(post => {
+              const isHelp = post.type === 'help';
+              const urgencyBadge = isHelp ? getUrgencyBadge(post.urgency) : null;
+              return (
+                <div key={post.id} className="post-card" onClick={() => navigate(`/post/${post.id}`)}>
+                  <div className="post-header">
+                    <div style={{display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap'}}>
+                      <span className={`post-type ${post.type}`}>
+                        {post.type === 'lost' ? '🔍 Потерялся' : post.type === 'service' ? '🛎️ Реклама' : post.type === 'help' ? '🆘 Нужна помощь' : '🐾 Найден'}
+                      </span>
+                      {urgencyBadge && (
+                        <span style={{fontSize:'11px', fontWeight:'700', color: urgencyBadge.color, background: urgencyBadge.color + '15', borderRadius:'10px', padding:'2px 8px'}}>
+                          {urgencyBadge.label}
+                        </span>
+                      )}
+                    </div>
+                    <span className="post-time">{getTimeAgo(post.created)}</span>
+                  </div>
+
+                  {post.image && (
+                    <img src={getImageUrl(post, post.image)} alt={post.petName} className="post-image" />
+                  )}
+
+                  {/* Для help — показываем описание проблемы вместо клички */}
+                  {isHelp ? (
+                    <>
+                      {post.helpDescription && (
+                        <div className="post-description" style={{marginTop:'8px', fontWeight:'500', color:'#333'}}>
+                          {post.helpDescription.length > 120 ? post.helpDescription.slice(0, 120) + '...' : post.helpDescription}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="post-title">{post.petName}</div>
+                      <div className="post-description">{post.description}</div>
+                    </>
+                  )}
+
+                  {post.location && (
+                    <div className="post-location">📍 {post.location}</div>
+                  )}
                 </div>
-                {post.image && (
-                  <img src={getImageUrl(post, post.image)} alt={post.petName} className="post-image" />
-                )}
-                <div className="post-title">{post.petName}</div>
-                <div className="post-description">{post.description}</div>
-                <div className="post-location">📍 {post.location}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
-        </div>
- 
+      </div>
 
       <BottomNav />
     </div>
   );
 }
- 
+
 function getTimeAgo(timestamp) {
   if (!timestamp) return 'недавно';
-  const now = new Date();
-  const postDate = new Date(timestamp);
-  const diff = Math.floor((now - postDate) / 1000);
+  const diff = Math.floor((new Date() - new Date(timestamp)) / 1000);
   if (diff < 60) return 'только что';
   if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
   return `${Math.floor(diff / 86400)} дн назад`;
 }
- 
+
 export default Home;
- 

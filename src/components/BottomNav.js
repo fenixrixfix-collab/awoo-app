@@ -51,8 +51,8 @@ function BottomNav() {
 
   const navItems = [
     { path: '/home', icon: HomeIcon, label: 'Главная' },
-    { path: '/create-post?type=lost', icon: SearchIcon, label: 'Потерял', badge: badges.lost },
-    { path: '/create-post?type=found', icon: PawIcon, label: 'Нашёл', badge: badges.found },
+    { path: '/create-post?type=lost', icon: SearchIcon, label: 'Потерял' },
+    { path: '/create-post?type=found', icon: PawIcon, label: 'Нашёл' },
     { path: '/volunteers', icon: VolunteerIcon, label: 'Волонтёры' },
     { path: '/chats', icon: ChatIcon, label: 'Чаты', badge: badges.chats },
     { path: '/services', icon: () => <span style={{fontSize:'22px'}}>🛎️</span>, label: 'Услуги' },
