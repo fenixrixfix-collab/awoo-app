@@ -408,7 +408,7 @@ function Profile() {
                       </div>
                     </div>
                     <div style={{display:'flex', gap:'8px', marginTop:'12px'}}>
-                      <button onClick={() => navigate(`/post/${post.id}`)} style={{flex:1, padding:'8px', background:'#F5F9FF', border:'1px solid #E3F2FD', borderRadius:'8px', cursor:'pointer', fontSize:'13px', color:'#3B5998'}}>👁️ Просмотр</button>
+                      <button onClick={() => navigate(`/post/${post.id}?edit=1`)} style={{flex:1, padding:'8px', background:'#F5F9FF', border:'1px solid #E3F2FD', borderRadius:'8px', cursor:'pointer', fontSize:'13px', color:'#3B5998'}}>✏️ Редактировать</button>
                       <button onClick={() => handleDeletePost(post.id)} style={{flex:1, padding:'8px', background:'#FFEBEE', border:'1px solid #FFCDD2', borderRadius:'8px', cursor:'pointer', fontSize:'13px', color:'#C62828'}}>🗑️ Удалить</button>
                     </div>
                   </div>
