@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import pb, { getImageUrl } from '../services/pocketbase';
 import Map, { Marker, NavigationControl } from 'react-map-gl/maplibre';
 import '../styles/PostDetail.css';
@@ -24,6 +24,7 @@ function PostDetail() {
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
   const currentUser = pb.authStore.model;
+  const [searchParams] = useSearchParams();
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [editImage, setEditImage] = useState(null);
@@ -52,6 +53,21 @@ function PostDetail() {
           const author = await pb.collection('users').getOne(record.userId);
           setPostAuthor(author);
         } catch (e) {}
+      }
+      // Автооткрытие редактирования если пришли из профиля
+      if (searchParams.get('edit') === '1' && record.userId === pb.authStore.model?.id) {
+        setTimeout(() => {
+          setEditForm({
+            petName: record.petName || '',
+            breed: record.breed || '',
+            description: record.description || '',
+            location: record.location || '',
+            date: record.date || '',
+            reward: record.reward || '',
+          });
+          setEditImagePreview(record.image ? `${pb.baseUrl}/api/files/posts/${record.id}/${record.image}` : null);
+          setShowEditModal(true);
+        }, 300);
       }
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -269,12 +285,7 @@ function PostDetail() {
           <div onClick={handleShare} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
             ↗️
           </div>
-          {/* Редактировать — только для автора */}
-          {currentUser?.id === post?.userId && (
-            <div onClick={openEdit} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
-              ✏️
-            </div>
-          )}
+
         </div>
       </div>
 
