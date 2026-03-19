@@ -22,7 +22,13 @@ function PostDetail() {
   const [likesCount, setLikesCount] = useState(0);
   const [postAuthor, setPostAuthor] = useState(null);
   const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
   const currentUser = pb.authStore.model;
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editImage, setEditImage] = useState(null);
+  const [editImagePreview, setEditImagePreview] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     fetchPost();
@@ -94,6 +100,44 @@ function PostDetail() {
     if (postAuthor.phoneHidden) { alert('Пользователь скрыл номер телефона'); return; }
     if (!postAuthor.phone) { alert('Телефон не указан'); return; }
     setShowPhone(true);
+  };
+
+  const openEdit = () => {
+    setEditForm({
+      petName: post.petName || '',
+      breed: post.breed || '',
+      description: post.description || '',
+      location: post.location || '',
+      date: post.date || '',
+      reward: post.reward || '',
+    });
+    setEditImage(null);
+    setEditImagePreview(post.image ? getImageUrl(post, post.image) : null);
+    setShowEditModal(true);
+  };
+
+  const handleEditImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setEditImage(file);
+    setEditImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveEdit = async () => {
+    setEditSaving(true);
+    try {
+      const data = new FormData();
+      Object.entries(editForm).forEach(([k, v]) => data.append(k, v));
+      if (editImage) data.append('image', editImage);
+      const updated = await pb.collection('posts').update(id, data);
+      setPost(updated);
+      setShowEditModal(false);
+    } catch (e) {
+      console.error(e);
+      alert('Ошибка при сохранении');
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const fetchComments = async () => {
@@ -225,6 +269,12 @@ function PostDetail() {
           <div onClick={handleShare} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
             ↗️
           </div>
+          {/* Редактировать — только для автора */}
+          {currentUser?.id === post?.userId && (
+            <div onClick={openEdit} style={{cursor:'pointer', background:'rgba(0,0,0,0.25)', borderRadius:'50%', width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px'}}>
+              ✏️
+            </div>
+          )}
         </div>
       </div>
 
@@ -428,6 +478,64 @@ function PostDetail() {
           </button>
         )}
       </div>
+
+      {/* Модалка редактирования */}
+      {showEditModal && (
+        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'flex-end'}}
+          onClick={() => setShowEditModal(false)}>
+          <div style={{background:'#F5F7FA', borderRadius:'24px 24px 0 0', width:'100%', maxHeight:'90vh', overflowY:'auto', padding:'20px'}}
+            onClick={e => e.stopPropagation()}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px'}}>
+              <div style={{fontSize:'18px', fontWeight:'700', color:'#333'}}>✏️ Редактировать</div>
+              <button onClick={() => setShowEditModal(false)} style={{background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:'#999'}}>✕</button>
+            </div>
+
+            {/* Фото */}
+            <div style={{marginBottom:'16px'}}>
+              <input ref={editFileInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleEditImageChange} />
+              {editImagePreview ? (
+                <div style={{position:'relative', height:'160px'}}>
+                  <img src={editImagePreview} alt="preview" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'12px'}} />
+                  <div style={{position:'absolute', bottom:'8px', right:'8px', display:'flex', gap:'8px'}}>
+                    <button onClick={() => editFileInputRef.current?.click()} style={{background:'rgba(0,0,0,0.6)', color:'white', border:'none', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'12px'}}>📷 Изменить</button>
+                    <button onClick={() => { setEditImage(null); setEditImagePreview(null); }} style={{background:'rgba(220,50,50,0.8)', color:'white', border:'none', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'12px'}}>✕</button>
+                  </div>
+                </div>
+              ) : (
+                <div onClick={() => editFileInputRef.current?.click()} style={{height:'100px', border:'2px dashed #6BA3E8', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', background:'white', gap:'8px'}}>
+                  <span style={{fontSize:'24px'}}>📷</span>
+                  <span style={{color:'#6BA3E8', fontWeight:'600', fontSize:'14px'}}>Добавить фото</span>
+                </div>
+              )}
+            </div>
+
+            {/* Поля */}
+            {[
+              ['petName', 'Кличка', 'text'],
+              ['breed', 'Порода', 'text'],
+              ['location', 'Место', 'text'],
+              ['date', 'Дата', 'date'],
+              ['reward', 'Вознаграждение (₽)', 'number'],
+            ].map(([key, label, type]) => (
+              <div key={key} style={{marginBottom:'12px'}}>
+                <div style={{fontSize:'13px', fontWeight:'600', color:'#333', marginBottom:'6px'}}>{label}</div>
+                <input type={type} value={editForm[key] || ''} onChange={e => setEditForm(f => ({...f, [key]: e.target.value}))}
+                  style={{width:'100%', padding:'11px 14px', border:'2px solid #E0E0E0', borderRadius:'10px', fontSize:'14px', boxSizing:'border-box', fontFamily:'inherit'}} />
+              </div>
+            ))}
+            <div style={{marginBottom:'16px'}}>
+              <div style={{fontSize:'13px', fontWeight:'600', color:'#333', marginBottom:'6px'}}>Описание</div>
+              <textarea value={editForm.description || ''} onChange={e => setEditForm(f => ({...f, description: e.target.value}))} rows={3}
+                style={{width:'100%', padding:'11px 14px', border:'2px solid #E0E0E0', borderRadius:'10px', fontSize:'14px', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit'}} />
+            </div>
+
+            <button onClick={handleSaveEdit} disabled={editSaving}
+              style={{width:'100%', padding:'14px', background:'linear-gradient(135deg, #3B5998, #6BA3E8)', color:'white', border:'none', borderRadius:'12px', fontSize:'16px', fontWeight:'700', cursor:'pointer'}}>
+              {editSaving ? '⏳ Сохранение...' : '✅ Сохранить'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Модалка телефона */}
       {showPhone && postAuthor?.phone && (
