@@ -8,6 +8,7 @@ function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const [badges, setBadges] = useState({ lost: 0, found: 0, chats: 0 });
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const currentUser = pb.authStore.model;
 
   useEffect(() => {
@@ -37,13 +38,19 @@ function BottomNav() {
   };
 
   const getFabPath = () => {
+    if (!currentUser) { setShowAuthModal(true); return null; }
     if (currentUser?.userType === 'volunteer') return '/create-post/choose';
     if (currentUser?.userType === 'service') return '/create-post?type=service';
     return '/create-post';
   };
 
   const handleNav = (path) => {
-    if (path === '/home') {}
+    // Защищённые маршруты для незалогиненных
+    const protectedPaths = ['/chats', '/profile'];
+    if (!currentUser && protectedPaths.some(p => path.startsWith(p))) {
+      setShowAuthModal(true);
+      return;
+    }
     if (path === '/volunteers') localStorage.setItem('lastVisitVolunteers', new Date().toISOString());
     if (path === '/services') localStorage.setItem('lastVisitServices', new Date().toISOString());
     navigate(path);
@@ -70,7 +77,7 @@ function BottomNav() {
     <>
       {/* FAB кнопка ➕ */}
       <div
-        onClick={() => navigate(getFabPath())}
+        onClick={() => { const path = getFabPath(); if (path) navigate(path); }}
         style={{
           position: 'fixed', bottom: '80px', right: '20px',
           width: '56px', height: '56px', borderRadius: '50%',
@@ -108,6 +115,29 @@ function BottomNav() {
           );
         })}
       </div>
+
+      {/* Модалка авторизации для гостей */}
+      {showAuthModal && (
+        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end'}}
+          onClick={() => setShowAuthModal(false)}>
+          <div style={{background:'white', borderRadius:'24px 24px 0 0', width:'100%', padding:'24px'}}
+            onClick={e => e.stopPropagation()}>
+            <div style={{textAlign:'center', marginBottom:'20px'}}>
+              <div style={{fontSize:'40px', marginBottom:'8px'}}>🐾</div>
+              <div style={{fontWeight:'700', fontSize:'18px', marginBottom:'6px'}}>Нужна авторизация</div>
+              <div style={{fontSize:'14px', color:'#666'}}>Войдите или зарегистрируйтесь чтобы продолжить</div>
+            </div>
+            <div onClick={() => navigate('/login')}
+              style={{display:'block', padding:'14px', background:'#3B5998', color:'white', borderRadius:'12px', textAlign:'center', fontSize:'15px', fontWeight:'700', cursor:'pointer', marginBottom:'10px'}}>
+              Войти
+            </div>
+            <div onClick={() => navigate('/register')}
+              style={{display:'block', padding:'14px', background:'#F5F9FF', color:'#3B5998', borderRadius:'12px', textAlign:'center', fontSize:'15px', fontWeight:'700', cursor:'pointer', border:'2px solid #E3F2FD'}}>
+              Зарегистрироваться
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

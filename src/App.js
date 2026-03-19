@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import pb from './services/pocketbase';
- 
+
 // Pages
 import SplashScreen from './pages/SplashScreen';
 import Login from './pages/Login';
@@ -19,14 +19,39 @@ import Services from './pages/Services';
 import ServiceCategory from './pages/ServiceCategory';
 import { MoreMenu } from './pages/PlaceholderPages';
 import Blacklist from './pages/Blacklist';
- 
+
 // Styles
 import './styles/App.css';
- 
+
+// Компонент-защита для страниц требующих авторизации
+function RequireAuth({ user, children }) {
+  if (!user) {
+    // Показываем модалку входа вместо редиректа
+    return (
+      <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end'}}>
+        <div style={{background:'white', borderRadius:'24px 24px 0 0', width:'100%', padding:'24px'}}>
+          <div style={{textAlign:'center', marginBottom:'20px'}}>
+            <div style={{fontSize:'40px', marginBottom:'8px'}}>🐾</div>
+            <div style={{fontWeight:'700', fontSize:'18px', marginBottom:'6px'}}>Нужна авторизация</div>
+            <div style={{fontSize:'14px', color:'#666'}}>Войдите или зарегистрируйтесь чтобы продолжить</div>
+          </div>
+          <a href="/login" style={{display:'block', padding:'14px', background:'#3B5998', color:'white', borderRadius:'12px', textAlign:'center', fontSize:'15px', fontWeight:'700', textDecoration:'none', marginBottom:'10px'}}>
+            Войти
+          </a>
+          <a href="/register" style={{display:'block', padding:'14px', background:'#F5F9FF', color:'#3B5998', borderRadius:'12px', textAlign:'center', fontSize:'15px', fontWeight:'700', textDecoration:'none', border:'2px solid #E3F2FD'}}>
+            Зарегистрироваться
+          </a>
+        </div>
+      </div>
+    );
+  }
+  return children;
+}
+
 function App() {
   const [user, setUser] = React.useState(pb.authStore.model);
   const [showSplash, setShowSplash] = React.useState(true);
- 
+
   React.useEffect(() => {
     const unsubscribe = pb.authStore.onChange((token, model) => {
       setUser(model);
@@ -39,35 +64,40 @@ function App() {
       clearTimeout(splashTimer);
     };
   }, []);
- 
+
   if (showSplash) return <SplashScreen />;
- 
+
   return (
     <Router>
       <div className="App">
         <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/home" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/home" />} />
-          <Route path="/home" element={user ? <Home /> : <Navigate to="/login" />} />
-          <Route path="/create-post/choose" element={user ? <CreatePostChoose /> : <Navigate to="/login" />} />
-          <Route path="/create-post" element={user ? <CreatePost /> : <Navigate to="/login" />} />
-          <Route path="/post/:id" element={user ? <PostDetail /> : <Navigate to="/login" />} />
-          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-          <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
-          <Route path="/volunteers" element={user ? <VolunteersCatalog /> : <Navigate to="/login" />} />
-          <Route path="/volunteers/requests" element={user ? <VolunteersRequests /> : <Navigate to="/login" />} />
-          <Route path="/services" element={user ? <Services /> : <Navigate to="/login" />} />
-          <Route path="/services/:type" element={user ? <ServiceCategory /> : <Navigate to="/login" />} />
-          <Route path="/chats" element={user ? <Chats /> : <Navigate to="/login" />} />
-          <Route path="/chat/:chatId" element={user ? <ChatRoom /> : <Navigate to="/login" />} />
-          <Route path="/more" element={user ? <MoreMenu /> : <Navigate to="/login" />} />
-          <Route path="/blacklist" element={user ? <Blacklist /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to={user ? "/home" : "/login"} />} />
-          <Route path="*" element={<Navigate to={user ? "/home" : "/login"} />} />
+
+          {/* Публичные страницы — доступны без авторизации */}
+          <Route path="/home" element={<Home />} />
+          <Route path="/post/:id" element={<PostDetail />} />
+          <Route path="/volunteers" element={<VolunteersCatalog />} />
+          <Route path="/volunteers/requests" element={<VolunteersRequests />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:type" element={<ServiceCategory />} />
+
+          {/* Страницы требующие авторизации */}
+          <Route path="/create-post/choose" element={<RequireAuth user={user}><CreatePostChoose /></RequireAuth>} />
+          <Route path="/create-post" element={<RequireAuth user={user}><CreatePost /></RequireAuth>} />
+          <Route path="/profile" element={<RequireAuth user={user}><Profile /></RequireAuth>} />
+          <Route path="/profile/:id" element={<Profile />} />
+          <Route path="/chats" element={<RequireAuth user={user}><Chats /></RequireAuth>} />
+          <Route path="/chat/:chatId" element={<RequireAuth user={user}><ChatRoom /></RequireAuth>} />
+          <Route path="/more" element={<RequireAuth user={user}><MoreMenu /></RequireAuth>} />
+          <Route path="/blacklist" element={<Blacklist />} />
+
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="*" element={<Navigate to="/home" />} />
         </Routes>
       </div>
     </Router>
   );
 }
- 
+
 export default App;
