@@ -1,7 +1,7 @@
 import PocketBase from 'pocketbase';
 
 // PocketBase конфигурация
-const POCKETBASE_URL = process.env.REACT_APP_POCKETBASE_URL || 'https://pocketbase-production-1bbb.up.railway.app';
+const POCKETBASE_URL = process.env.REACT_APP_POCKETBASE_URL || 'https://awoo-app-v2.duckdns.org';
 const pb = new PocketBase(POCKETBASE_URL);
 
 // Автоматически обновляем токен
@@ -24,4 +24,3 @@ export const getCurrentUser = () => {
 export const isAuthenticated = () => {
   return pb.authStore.isValid;
 };
-
