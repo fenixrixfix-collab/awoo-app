@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import pb from './services/pocketbase';
+import OneSignal from 'react-onesignal';
 
 // Pages
 import SplashScreen from './pages/SplashScreen';
@@ -26,7 +27,6 @@ import './styles/App.css';
 // Компонент-защита для страниц требующих авторизации
 function RequireAuth({ user, children }) {
   if (!user) {
-    // Показываем модалку входа вместо редиректа
     return (
       <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end'}}>
         <div style={{background:'white', borderRadius:'24px 24px 0 0', width:'100%', padding:'24px'}}>
@@ -48,17 +48,47 @@ function RequireAuth({ user, children }) {
   return children;
 }
 
+// Сохраняем OneSignal Player ID в профиль пользователя
+const saveOneSignalId = async (userId) => {
+  try {
+    const subscriptionId = await OneSignal.User.PushSubscription.id;
+    if (subscriptionId && userId) {
+      await pb.collection('users').update(userId, { oneSignalId: subscriptionId });
+    }
+  } catch (e) {
+    console.log('OneSignal ID save error:', e);
+  }
+};
+
 function App() {
   const [user, setUser] = React.useState(pb.authStore.model);
   const [showSplash, setShowSplash] = React.useState(true);
 
   React.useEffect(() => {
+    // Инициализация OneSignal
+    OneSignal.init({
+      appId: '1d88784a-2a8e-4a3b-9ca3-97be4c939d90',
+      allowLocalhostAsSecureOrigin: true,
+      notifyButton: { enable: false },
+    }).then(() => {
+      // Сохраняем Player ID если пользователь уже авторизован
+      if (pb.authStore.model?.id) {
+        saveOneSignalId(pb.authStore.model.id);
+      }
+    });
+
     const unsubscribe = pb.authStore.onChange((token, model) => {
       setUser(model);
+      // Сохраняем Player ID при входе
+      if (model?.id) {
+        setTimeout(() => saveOneSignalId(model.id), 2000);
+      }
     });
+
     const splashTimer = setTimeout(() => {
       setShowSplash(false);
     }, 2500);
+
     return () => {
       unsubscribe();
       clearTimeout(splashTimer);
