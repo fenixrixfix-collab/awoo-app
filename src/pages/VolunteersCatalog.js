@@ -34,7 +34,7 @@ function VolunteersCatalog() {
   const fetchVolunteers = useCallback(async () => {
     setVolunteers(null);
     try {
-      let filterStr = 'userType = "volunteer"';
+      let filterStr = '(userType = "volunteer" || userType = "volunteer_pending")';
       if (filter === 'mydistrict' && userDistrict) filterStr += ` && district = "${userDistrict}"`;
 
       const records = await pb.collection('users').getList(1, 50, {
@@ -118,7 +118,16 @@ function VolunteersCatalog() {
                     }
                   </div>
                   <div className="vol-info">
-                    <div className="vol-name">{vol.name}</div>
+                    <div className="vol-name">
+                      {vol.name}
+                      {vol.userType === 'volunteer_pending' && (
+                        <span style={{
+                          marginLeft:'6px', fontSize:'11px', fontWeight:'600',
+                          background:'#FFF8E1', color:'#F57F17', border:'1px solid #FFE082',
+                          borderRadius:'10px', padding:'1px 7px', verticalAlign:'middle'
+                        }}>🕐 На проверке</span>
+                      )}
+                    </div>
                     {vol.district && <div className="vol-district">📍 {vol.district}</div>}
                     <div className="vol-rating">
                       <span className="stars">⭐</span>

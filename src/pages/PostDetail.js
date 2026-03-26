@@ -30,6 +30,8 @@ function PostDetail() {
   const [editImage, setEditImage] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [helpMarked, setHelpMarked] = useState(false);
+  const [helpMarking, setHelpMarking] = useState(false);
 
   useEffect(() => {
     fetchPost();
@@ -53,6 +55,13 @@ function PostDetail() {
           const author = await pb.collection('users').getOne(record.userId);
           setPostAuthor(author);
         } catch (e) {}
+      }
+      // Проверяем — отмечал ли автор "помогли" для этого поста
+      if (currentUser && record.userId === currentUser.id) {
+        try {
+          await pb.collection('helpmarks').getFirstListItem(`postId = "${id}"`);
+          setHelpMarked(true);
+        } catch (e) { setHelpMarked(false); }
       }
       // Автооткрытие редактирования если пришли из профиля
       if (searchParams.get('edit') === '1' && record.userId === pb.authStore.model?.id) {
@@ -221,6 +230,46 @@ function PostDetail() {
       setComments(prev => prev.filter(c => c.id !== commentId));
     } catch (error) {
       console.error('Error deleting comment:', error);
+    }
+  };
+
+  // Найти волонтёра среди комментаторов
+  const volunteerCommenters = comments.filter(c =>
+    c.user !== post?.userId // не автор поста
+  );
+
+  const handleHelpMark = async (volunteerId) => {
+    if (!volunteerId || helpMarking) return;
+    setHelpMarking(true);
+    try {
+      // Создаём запись helpmark чтобы не засчитывать дважды
+      await pb.collection('helpmarks').create({
+        postId: id,
+        volunteerId,
+        authorId: currentUser.id,
+      });
+
+      // Увеличиваем helpCount волонтёра
+      const volunteer = await pb.collection('users').getOne(volunteerId);
+      const newHelpCount = (volunteer.helpCount || 0) + 1;
+      const updateData = { helpCount: newHelpCount };
+
+      // Автоверификация: 3+ помощи и статус volunteer_pending → повышаем до volunteer
+      if (newHelpCount >= 3 && volunteer.userType === 'volunteer_pending') {
+        updateData.userType = 'volunteer';
+      }
+
+      await pb.collection('users').update(volunteerId, updateData);
+      setHelpMarked(true);
+    } catch (e) {
+      // Если helpmark уже существует — просто отмечаем как marked
+      if (e.status === 400) {
+        setHelpMarked(true);
+      } else {
+        alert('Ошибка при отметке. Попробуйте позже.');
+      }
+    } finally {
+      setHelpMarking(false);
     }
   };
 
@@ -414,6 +463,40 @@ function PostDetail() {
             {postAuthor?.isVerified && <div className="verified-badge">✓ Проверен</div>}
           </div>
         </div>
+
+        {/* Кнопка "Помогли" — видна только автору поста если есть комментарии от других */}
+        {currentUser && post.userId === currentUser.id && volunteerCommenters.length > 0 && (
+          <div className="info-section" style={{paddingBottom:'8px'}}>
+            <div className="info-title">✅ Отметить помощь</div>
+            {helpMarked ? (
+              <div style={{padding:'12px', background:'#E8F5E9', borderRadius:'10px', textAlign:'center', fontSize:'14px', color:'#2E7D32', fontWeight:'600'}}>
+                ✅ Помощь отмечена — спасибо!
+              </div>
+            ) : (
+              <div>
+                <div style={{fontSize:'13px', color:'#666', marginBottom:'10px'}}>
+                  Кто вам помог? Это поможет подтвердить волонтёра.
+                </div>
+                <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
+                  {[...new Map(volunteerCommenters.map(c => [c.user, c])).values()].map(c => (
+                    <button key={c.user} onClick={() => handleHelpMark(c.user)}
+                      disabled={helpMarking}
+                      style={{
+                        display:'flex', alignItems:'center', gap:'10px',
+                        padding:'10px 14px', background:'white', border:'2px solid #E0E0E0',
+                        borderRadius:'10px', cursor:'pointer', fontSize:'14px', fontWeight:'600',
+                        color:'#333', transition:'all 0.2s'
+                      }}>
+                      <span style={{fontSize:'20px'}}>👤</span>
+                      <span style={{flex:1, textAlign:'left'}}>{c.userName || 'Пользователь'}</span>
+                      <span style={{fontSize:'13px', color:'#4CAF50', fontWeight:'700'}}>❤️ Помог!</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Комментарии */}
         <div className="info-section comments-section">

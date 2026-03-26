@@ -43,7 +43,8 @@ function Profile() {
 
   const isOwnProfile = !id;
   const profileUserId = id || pb.authStore.model?.id;
-  const isVolunteer = user?.userType === 'volunteer';
+  const isVolunteer = user?.userType === 'volunteer' || user?.userType === 'volunteer_pending';
+  const isVolunteerPending = user?.userType === 'volunteer_pending';
   const isService = user?.userType === 'service';
   const currentUser = pb.authStore.model;
 
@@ -259,8 +260,18 @@ function Profile() {
             {user?.isVerified && <span style={{fontSize:'14px', marginLeft:'6px', color:'#4FC3F7'}}>✓</span>}
           </div>
           <div className="user-type">
-            {isVolunteer ? '🤝 Волонтёр' : isService ? '🛎️ Поставщик услуг' : '🐾 Владелец питомцев'}
+            {isVolunteerPending ? '❤️ Волонтёр' : isVolunteer ? '🤝 Волонтёр' : isService ? '🛎️ Поставщик услуг' : '🐾 Владелец питомцев'}
           </div>
+          {isVolunteerPending && (
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:'5px',
+              background:'rgba(255,193,7,0.2)', border:'1px solid rgba(255,193,7,0.5)',
+              borderRadius:'20px', padding:'3px 10px', marginTop:'6px',
+              fontSize:'12px', color:'#FFF8E1', fontWeight:'600'
+            }}>
+              🕐 На проверке
+            </div>
+          )}
           {isVolunteer && user?.district && (
             <div style={{fontSize:'13px', color:'rgba(255,255,255,0.85)', marginTop:'4px'}}>📍 {user.district}</div>
           )}
