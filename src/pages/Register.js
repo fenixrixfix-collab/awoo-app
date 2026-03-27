@@ -19,7 +19,8 @@ function Register() {
     volunteerLink: '',
   });
   const [serviceCategories, setServiceCategories] = useState([]);
-  const [isVolunteer, setIsVolunteer] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -32,7 +33,8 @@ function Register() {
     );
   };
 
-  const isService = formData.userType === 'service' && !isVolunteer;
+  const isVolunteer = formData.userType === 'volunteer';
+  const isService = formData.userType === 'service';
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -41,6 +43,7 @@ function Register() {
     if (formData.password.length < 8) { setError('Пароль должен быть не менее 8 символов'); return; }
     if (isService && serviceCategories.length === 0) { setError('Выберите хотя бы одну категорию услуг'); return; }
     if (isVolunteer && !formData.volunteerLink.trim()) { setError('Укажите ссылку на профиль в соцсети'); return; }
+    if (!agreedToTerms) { setError('Необходимо принять пользовательское соглашение'); return; }
     setLoading(true);
     try {
       const userData = {
@@ -106,29 +109,14 @@ function Register() {
               <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+7 (___) ___-__-__" required disabled={loading} />
             </div>
 
-            {/* Кнопка волонтёр */}
-            <div
-              onClick={() => !loading && setIsVolunteer(v => !v)}
-              style={{
-                display:'flex', alignItems:'center', gap:'12px',
-                padding:'14px 16px', borderRadius:'12px', marginBottom:'16px',
-                border: isVolunteer ? '2px solid #E8534A' : '2px solid #E0E0E0',
-                background: isVolunteer ? '#FFF5F5' : 'white',
-                cursor:'pointer', transition:'all 0.2s'
-              }}>
-              <span style={{fontSize:'22px', lineHeight:1}}>❤️</span>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:'700', fontSize:'15px', color: isVolunteer ? '#E8534A' : '#333'}}>Я волонтёр</div>
-                <div style={{fontSize:'12px', color:'#999', marginTop:'2px'}}>Помогаю в поиске и передержке животных</div>
-              </div>
-              <div style={{
-                width:'22px', height:'22px', borderRadius:'6px', border:'2px solid',
-                borderColor: isVolunteer ? '#E8534A' : '#CCC',
-                background: isVolunteer ? '#E8534A' : 'white',
-                display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0
-              }}>
-                {isVolunteer && <span style={{color:'white', fontSize:'14px', lineHeight:1}}>✓</span>}
-              </div>
+            {/* Тип аккаунта */}
+            <div className="form-group">
+              <label>Тип аккаунта</label>
+              <select name="userType" value={formData.userType} onChange={handleChange} disabled={loading}>
+                <option value="user">🐾 Владелец животного</option>
+                <option value="volunteer">❤️ Волонтёр</option>
+                <option value="service">🛎️ Поставщик услуг</option>
+              </select>
             </div>
 
             {/* Блок волонтёра */}
@@ -155,15 +143,7 @@ function Register() {
               </div>
             )}
 
-            {!isVolunteer && (
-              <div className="form-group">
-                <label>Тип аккаунта</label>
-                <select name="userType" value={formData.userType} onChange={handleChange} disabled={loading}>
-                  <option value="user">🐾 Владелец животного</option>
-                  <option value="service">🛎️ Поставщик услуг</option>
-                </select>
-              </div>
-            )}
+
 
             {/* Блок для поставщика услуг */}
             {isService && (
@@ -217,7 +197,50 @@ function Register() {
               <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Повторите пароль" required disabled={loading} />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            {/* Пользовательское соглашение */}
+            <div style={{marginBottom:'16px'}}>
+              <div
+                onClick={() => setShowTerms(v => !v)}
+                style={{display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'10px 14px', background:'#F5F5F5', borderRadius:'10px',
+                  cursor:'pointer', fontSize:'13px', fontWeight:'600', color:'#555', marginBottom:'8px'}}>
+                <span>📄 Пользовательское соглашение</span>
+                <span>{showTerms ? '▲' : '▼'}</span>
+              </div>
+              {showTerms && (
+                <div style={{background:'#FAFAFA', border:'1px solid #E0E0E0', borderRadius:'10px',
+                  padding:'14px', fontSize:'12px', color:'#555', lineHeight:'1.7',
+                  maxHeight:'200px', overflowY:'auto', marginBottom:'10px'}}>
+                  <p style={{fontWeight:'700', marginTop:0}}>Пользовательское соглашение сервиса AWOO</p>
+                  <p>1. <b>Общие положения.</b> Настоящее Соглашение регулирует использование платформы AWOO (далее — Сервис). Используя Сервис, вы подтверждаете своё согласие с настоящими условиями.</p>
+                  <p>2. <b>Статус платформы.</b> AWOO является информационным посредником и не несёт ответственности за содержание объявлений, действия пользователей, волонтёров или поставщиков услуг, а также за результаты поиска животных.</p>
+                  <p>3. <b>Ограничение ответственности.</b> Сервис предоставляется «как есть». Администрация AWOO не гарантирует достоверность информации, размещённой пользователями, и не несёт ответственности за любой прямой или косвенный ущерб, возникший в результате использования Сервиса.</p>
+                  <p>4. <b>Волонтёры и услуги.</b> Волонтёры и поставщики услуг действуют самостоятельно. AWOO не является работодателем, агентом или поручителем и не несёт ответственности за качество оказанных услуг, действия или бездействие волонтёров.</p>
+                  <p>5. <b>Персональные данные.</b> Регистрируясь на платформе, вы даёте согласие на обработку введённых вами персональных данных в целях функционирования Сервиса. Данные не передаются третьим лицам в коммерческих целях.</p>
+                  <p>6. <b>Контент пользователей.</b> Пользователь несёт полную ответственность за размещаемые объявления, фотографии и комментарии. Запрещается публикация ложной информации, материалов, нарушающих права третьих лиц или законодательство.</p>
+                  <p>7. <b>Изменение условий.</b> Администрация оставляет за собой право изменять условия Соглашения без предварительного уведомления. Продолжение использования Сервиса после внесения изменений означает согласие с новыми условиями.</p>
+                  <p style={{marginBottom:0}}>8. <b>Применимое право.</b> Настоящее Соглашение регулируется действующим законодательством. Все споры решаются путём переговоров, а при невозможности — в установленном законом порядке.</p>
+                </div>
+              )}
+              <div
+                onClick={() => setAgreedToTerms(v => !v)}
+                style={{display:'flex', alignItems:'center', gap:'10px', cursor:'pointer'}}>
+                <div style={{
+                  width:'20px', height:'20px', borderRadius:'5px', border:'2px solid',
+                  flexShrink:0,
+                  borderColor: agreedToTerms ? '#3B5998' : '#CCC',
+                  background: agreedToTerms ? '#3B5998' : 'white',
+                  display:'flex', alignItems:'center', justifyContent:'center'
+                }}>
+                  {agreedToTerms && <span style={{color:'white', fontSize:'13px', lineHeight:1}}>✓</span>}
+                </div>
+                <span style={{fontSize:'13px', color:'#555'}}>
+                  Я прочитал(а) и принимаю <span style={{color:'#3B5998', fontWeight:'600'}}>пользовательское соглашение</span>
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading || !agreedToTerms} style={{opacity: agreedToTerms ? 1 : 0.6}}>
               {loading ? 'Регистрация...' : 'Зарегистрироваться'}
             </button>
           </form>
