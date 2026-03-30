@@ -6,7 +6,7 @@ import BottomNav from '../components/BottomNav';
 function Blacklist() {
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
-  const isVolunteer = currentUser?.userType === 'volunteer';
+  const isVolunteer = currentUser?.userType === 'volunteer' || currentUser?.userType === 'volunteer_pending';
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

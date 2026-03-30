@@ -11,14 +11,20 @@ function Chats() {
   const [privateChats, setPrivateChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(true);
 
+  const isVolunteer = currentUser?.userType === 'volunteer' || currentUser?.userType === 'volunteer_pending';
+
   const groupChats = [
     { id: 'general', name: 'Общий чат', icon: '🌐', description: 'Для всех пользователей', forAll: true },
-    { id: 'volunteers', name: 'Чат волонтёров', icon: '🤝', description: 'Координация помощи', allowedType: 'volunteer' },
+    { id: 'volunteers', name: 'Чат волонтёров', icon: '🤝', description: 'Координация помощи', allowedTypes: ['volunteer', 'volunteer_pending'] },
     { id: 'veterinary', name: 'Чат ветеринаров', icon: '🏥', description: 'Профессиональное общение', allowedType: 'veterinary' },
     { id: 'trainers', name: 'Чат кинологов', icon: '🎓', description: 'Обмен опытом', allowedType: 'trainer' },
     { id: 'groomers', name: 'Чат грумеров', icon: '✂️', description: 'Советы и рекомендации', allowedType: 'groomer' },
     { id: 'zootaxi', name: 'Чат зоотакси', icon: '🚗', description: 'Координация перевозок', allowedType: 'zootaxi' },
-  ].filter(c => c.forAll || c.allowedType === currentUser?.userType);
+  ].filter(c => {
+    if (c.forAll) return true;
+    if (c.allowedTypes) return c.allowedTypes.includes(currentUser?.userType);
+    return c.allowedType === currentUser?.userType;
+  });
 
   useEffect(() => {
     if (activeTab === 'private') fetchPrivateChats();
