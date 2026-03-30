@@ -1,6 +1,6 @@
 {
   "short_name": "AWOO",
-  "name": "AWOO — Розыск животных",
+  "name": "AWOO — Розыск, помощь и уход за животными",
   "description": "Розыск, помощь и уход за животными",
   "icons": [
     { "src": "icon-16x16.png", "sizes": "16x16", "type": "image/png" },
@@ -12,8 +12,8 @@
   "start_url": "/home",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#3B5998",
-  "background_color": "#3B5998",
+  "theme_color": "#3e5e95",
+  "background_color": "#3e5e95",
   "lang": "ru",
   "categories": ["lifestyle", "social"]
 }
