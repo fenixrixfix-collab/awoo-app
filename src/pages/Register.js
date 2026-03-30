@@ -13,7 +13,7 @@ const SERVICE_CATEGORIES = [
 
 function Register() {
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', password: '', confirmPassword: '',
+    name: '', username: '', email: '', phone: '', password: '', confirmPassword: '',
     userType: 'user',
     address: '', workTime: '', priceFrom: '', serviceDescription: '',
     volunteerLink: '',
@@ -43,11 +43,13 @@ function Register() {
     if (formData.password.length < 8) { setError('Пароль должен быть не менее 8 символов'); return; }
     if (isService && serviceCategories.length === 0) { setError('Выберите хотя бы одну категорию услуг'); return; }
     if (isVolunteer && !formData.volunteerLink.trim()) { setError('Укажите ссылку на профиль в соцсети'); return; }
+    if (!formData.username.trim()) { setError('Придумайте уникальный @username'); return; }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(formData.username)) { setError('@username: только латиница, цифры и _, от 3 до 20 символов'); return; }
     if (!agreedToTerms) { setError('Необходимо принять пользовательское соглашение'); return; }
     setLoading(true);
     try {
       const userData = {
-        username: formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
+        username: formData.username.toLowerCase().trim(),
         email: formData.email,
         password: formData.password,
         passwordConfirm: formData.confirmPassword,
@@ -99,6 +101,18 @@ function Register() {
             <div className="form-group">
               <label>Имя *</label>
               <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Ваше имя или название организации" required disabled={loading} />
+            </div>
+            <div className="form-group">
+              <label>@Username * <span style={{fontSize:'11px', color:'#999', fontWeight:'400'}}>(уникальное имя для поиска)</span></label>
+              <div style={{position:'relative'}}>
+                <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'#999', fontSize:'15px', fontWeight:'600'}}>@</span>
+                <input type="text" name="username" value={formData.username} onChange={handleChange}
+                  placeholder="ivan_petrov" required disabled={loading}
+                  style={{paddingLeft:'28px'}}
+                  onInput={e => e.target.value = e.target.value.replace(/[^a-zA-Z0-9_]/g, '')}
+                />
+              </div>
+              <div style={{fontSize:'11px', color:'#999', marginTop:'4px'}}>Только латиница, цифры и _ (3–20 символов)</div>
             </div>
             <div className="form-group">
               <label>Email *</label>

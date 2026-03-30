@@ -259,6 +259,9 @@ function Profile() {
             {user?.name || 'Пользователь'}
             {user?.isVerified && <span style={{fontSize:'14px', marginLeft:'6px', color:'#4FC3F7'}}>✓</span>}
           </div>
+          {user?.username && (
+            <div style={{fontSize:'13px', color:'rgba(255,255,255,0.7)', marginTop:'2px'}}>@{user.username}</div>
+          )}
           <div className="user-type">
             {isVolunteerPending ? '❤️ Волонтёр' : isVolunteer ? '🤝 Волонтёр' : isService ? '🛎️ Поставщик услуг' : '🐾 Владелец питомцев'}
           </div>
@@ -702,7 +705,7 @@ function Profile() {
             </div>
 
             {/* Основные поля */}
-            {[['name','👤 Имя / Название','text'], ['phone','📞 Телефон','tel']].map(([key, label, type]) => (
+            {[['name','👤 Имя / Название','text'], ['username','@ Username','text'], ['phone','📞 Телефон','tel']].map(([key, label, type]) => (
               <div key={key} style={{marginBottom:'14px'}}>
                 <label style={{display:'block', fontSize:'13px', color:'#666', marginBottom:'6px', fontWeight:'600'}}>{label}</label>
                 <input type={type} value={editForm[key] || ''} onChange={e => setEditForm(f => ({...f, [key]: e.target.value}))}
