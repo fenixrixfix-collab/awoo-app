@@ -117,8 +117,9 @@ function VolunteersRequests() {
                 </div>
 
                 <div className="req-footer">
-                  <span className="responses-count">💬 {req.responses || 0} откликов</span>
-                  <span style={{fontSize:'12px', color:'#999'}}>👁 {req.views || 0}</span>
+                  <span style={{fontSize:'12px', color:'#999', display:'flex', alignItems:'center', gap:'3px'}}>👁 {req.views || 0}</span>
+                  <span className="responses-count">💬 {req.responses || 0}</span>
+                  <span style={{fontSize:'12px', color:'#999', display:'flex', alignItems:'center', gap:'3px'}}>❤️ {req.likes || 0}</span>
                 </div>
               </div>
             ))}

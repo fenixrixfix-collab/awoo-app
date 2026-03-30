@@ -17,7 +17,6 @@ function Home() {
   const [filterBadges, setFilterBadges] = useState({ lost: 0, found: 0, help: 0, services: 0 });
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
-  const isVolunteer = currentUser?.userType === 'volunteer' || currentUser?.userType === 'volunteer_pending';
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -133,12 +132,10 @@ function Home() {
               ЛС
               {badges.ls > 0 && <span style={{position:'absolute', top:'-6px', right:'-6px', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'700', minWidth:'16px', height:'16px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid rgba(59,89,152,0.95)'}}>{badges.ls > 99 ? '99+' : badges.ls}</span>}
             </button>
-            {isVolunteer && (
-              <button onClick={() => { localStorage.setItem('lastVisitCS', new Date().toISOString()); navigate('/blacklist'); }} style={{background:'rgba(220,50,50,0.5)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700', position:'relative'}}>
-                ЧС
-                {badges.cs > 0 && <span style={{position:'absolute', top:'-6px', right:'-6px', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'700', minWidth:'16px', height:'16px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid rgba(59,89,152,0.95)'}}>{badges.cs > 99 ? '99+' : badges.cs}</span>}
-              </button>
-            )}
+            <button onClick={() => { localStorage.setItem('lastVisitCS', new Date().toISOString()); navigate('/blacklist'); }} style={{background:'rgba(220,50,50,0.5)', border:'none', color:'white', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', fontSize:'13px', fontWeight:'700', position:'relative'}}>
+              ЧС
+              {badges.cs > 0 && <span style={{position:'absolute', top:'-6px', right:'-6px', background:'#FF6B35', color:'white', fontSize:'10px', fontWeight:'700', minWidth:'16px', height:'16px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px', border:'2px solid rgba(59,89,152,0.95)'}}>{badges.cs > 99 ? '99+' : badges.cs}</span>}
+            </button>
           </div>
         </div>
         <div className="search-bar">
@@ -252,6 +249,17 @@ function Home() {
                   {post.location && (
                     <div className="post-location">📍 {post.location}</div>
                   )}
+                  <div style={{display:'flex', alignItems:'center', gap:'12px', marginTop:'10px', paddingTop:'8px', borderTop:'1px solid #F0F0F0'}}>
+                    <span style={{fontSize:'12px', color:'#999', display:'flex', alignItems:'center', gap:'3px'}}>
+                      👁 {post.views || 0}
+                    </span>
+                    <span style={{fontSize:'12px', color:'#999', display:'flex', alignItems:'center', gap:'3px'}}>
+                      💬 {post.responses || 0}
+                    </span>
+                    <span style={{fontSize:'12px', color:'#999', display:'flex', alignItems:'center', gap:'3px'}}>
+                      ❤️ {post.likes || 0}
+                    </span>
+                  </div>
                 </div>
               );
             })}
