@@ -6,7 +6,7 @@ import BottomNav from '../components/BottomNav';
 function Blacklist() {
   const navigate = useNavigate();
   const currentUser = pb.authStore.model;
-  const isVolunteer = currentUser?.userType === 'volunteer' || currentUser?.userType === 'volunteer_pending';
+  const isVolunteer = currentUser?.userType === 'volunteer';
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -83,9 +83,7 @@ function Blacklist() {
           <div onClick={() => navigate(-1)} style={{fontSize:'24px', cursor:'pointer'}}>←</div>
           <div style={{fontSize:'20px', fontWeight:'700'}}>🚫 Чёрный список</div>
         </div>
-        <div style={{fontSize:'13px', opacity:0.85, paddingLeft:'36px', marginBottom:'12px'}}>
-          Люди, замеченные в жестоком обращении с животными
-        </div>
+
         {/* Поиск */}
         <div style={{display:'flex', alignItems:'center', background:'rgba(255,255,255,0.15)', borderRadius:'10px', padding:'8px 12px', gap:'8px'}}>
           <span style={{fontSize:'16px'}}>🔍</span>
