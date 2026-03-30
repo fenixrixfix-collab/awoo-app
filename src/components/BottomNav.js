@@ -37,11 +37,9 @@ function BottomNav() {
     } catch (e) {}
   };
 
-  const isVolunteer = currentUser?.userType === 'volunteer' || currentUser?.userType === 'volunteer_pending';
-
   const getFabPath = () => {
     if (!currentUser) { setShowAuthModal(true); return null; }
-    if (isVolunteer) return '/create-post/choose';
+    if (currentUser?.userType === 'volunteer') return '/create-post/choose';
     if (currentUser?.userType === 'service') return '/create-post?type=service';
     return '/create-post';
   };
@@ -65,7 +63,6 @@ function BottomNav() {
     { path: '/volunteers', icon: VolunteerIcon, label: 'Волонтёры' },
     { path: '/chats', icon: ChatIcon, label: 'Чаты', badge: badges.chats },
     { path: '/services', icon: () => <span style={{fontSize:'22px'}}>🛎️</span>, label: 'Услуги' },
-    ...(isVolunteer ? [{ path: '/blacklist', icon: () => <span style={{fontSize:'22px'}}>🚫</span>, label: 'ЧС' }] : []),
   ];
 
   const isActive = (path) => {
