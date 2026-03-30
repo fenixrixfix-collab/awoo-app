@@ -14,12 +14,6 @@ const categoryInfo = {
   boarding:   { name: 'Передержка', icon: '🏠', color: '#AA96DA' },
 };
 
-const mockProviders = [
-  { id: '1', name: 'Ветклиника "Айболит"', bio: 'Полный спектр ветеринарных услуг', rating: 4.8, reviewsCount: 156, priceFrom: 'от 500 ₽', address: 'ул. Ленина, 45', phone: '+7 (912) 345-67-89', workTime: '09:00 - 21:00', isVerified: true, lat: 55.7558, lng: 37.6173 },
-  { id: '2', name: 'Ветеринарный центр "Друг"', bio: 'Экстренная помощь 24/7', rating: 4.9, reviewsCount: 203, priceFrom: 'от 600 ₽', address: 'пр. Мира, 12', phone: '+7 (912) 456-78-90', workTime: 'Круглосуточно', isVerified: true, lat: 55.7700, lng: 37.6400 },
-  { id: '3', name: 'Доктор Пёс', bio: 'Специализация: собаки', rating: 4.7, reviewsCount: 89, priceFrom: 'от 450 ₽', address: 'ул. Пушкина, 78', phone: '+7 (912) 567-89-01', workTime: '10:00 - 20:00', isVerified: false, lat: 55.7400, lng: 37.6000 },
-];
-
 const getDistance = (lat1, lng1, lat2, lng2) => {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -56,9 +50,9 @@ function ServiceCategory() {
         filter: `userType = "service" && serviceCategories ~ "${type}"`,
         sort: '-created',
       });
-      setProviders(records.items.length > 0 ? records.items : mockProviders);
+      setProviders(records.items);
     } catch {
-      setProviders(mockProviders);
+      setProviders([]);
     }
   }, [type]);
 
