@@ -15,6 +15,7 @@ function VolunteersCatalog() {
   const [volunteers, setVolunteers] = useState(null);
   const [filter, setFilter] = useState('all');
   const [userDistrict, setUserDistrict] = useState(null);
+  const [stats, setStats] = useState({ total: 0, helped: 0, ready: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +30,24 @@ function VolunteersCatalog() {
         } catch {}
       }, () => {});
     }
+  }, []);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const [totalRes, helpRes] = await Promise.all([
+        pb.collection('users').getList(1, 1, {
+          filter: '(userType = "volunteer" || userType = "volunteer_pending")',
+          fields: 'id'
+        }),
+        pb.collection('users').getFullList({
+          filter: '(userType = "volunteer" || userType = "volunteer_pending")',
+          fields: 'helpCount'
+        }),
+      ]);
+      const totalHelped = helpRes.reduce((sum, v) => sum + (v.helpCount || 0), 0);
+      const ready = helpRes.filter(v => (v.helpCount || 0) === 0).length;
+      setStats({ total: totalRes.totalItems, helped: totalHelped, ready });
+    } catch {}
   }, []);
 
   const fetchVolunteers = useCallback(async () => {
@@ -50,6 +69,10 @@ function VolunteersCatalog() {
   useEffect(() => {
     fetchVolunteers();
   }, [fetchVolunteers]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const displayData = (() => {
     if (!volunteers) return [];
@@ -87,9 +110,9 @@ function VolunteersCatalog() {
       </div>
 
       <div className="stats-banner">
-        <div className="stat-item"><div className="stat-num">147</div><div className="stat-label">Волонтёров</div></div>
-        <div className="stat-item"><div className="stat-num">823</div><div className="stat-label">Помогли</div></div>
-        <div className="stat-item"><div className="stat-num">42</div><div className="stat-label">Готовы помочь</div></div>
+        <div className="stat-item"><div className="stat-num">{stats.total}</div><div className="stat-label">Волонтёров</div></div>
+        <div className="stat-item"><div className="stat-num">{stats.helped}</div><div className="stat-label">Помогли</div></div>
+        <div className="stat-item"><div className="stat-num">{stats.ready}</div><div className="stat-label">Готовы помочь</div></div>
       </div>
 
       {filter === 'mydistrict' && !userDistrict && (
